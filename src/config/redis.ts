@@ -10,7 +10,7 @@ export default class RedisManager {
     private client: RedisClient | null = null;
     private isConnecting = false;
 
-    private constructor() {}
+    private constructor() { }
 
     static getInstance(): RedisManager {
         if (!RedisManager.instance) {
@@ -74,14 +74,14 @@ export default class RedisManager {
                 enableReadyCheck: true,
                 lazyConnect: true,
                 keepAlive: 30000,
-                reconnectOnError: (err) => err.message.includes("READONLY"),
+                reconnectOnError: (err: Error) => err.message.includes("READONLY"),
             });
 
             this.client.on("connect", () => {
                 logger.info("Redis connecting...", withOperationContext("system", { action: "redis_connecting" }));
             });
 
-            this.client.on("error", (error) => {
+            this.client.on("error", (error: Error) => {
                 logger.error(
                     "Redis connection error:",
                     withOperationContext("system", {
