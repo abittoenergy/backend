@@ -1,0 +1,65 @@
+{
+  "name": "abittoenergy-backend",
+  "description": "IoT backend for Abittoenergy - communicates with devices via MQTT",
+  "repository": "https://github.com/abittoenergy/backend",
+  "keywords": [
+    "node",
+    "express",
+    "typescript",
+    "iot",
+    "mqtt",
+    "heroku"
+  ],
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "addons": [
+    {
+      "plan": "heroku-postgresql:essential-0"
+    },
+    {
+      "plan": "heroku-redis:mini"
+    }
+  ],
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "env": {
+    "NODE_ENV": {
+      "description": "Environment mode",
+      "value": "production"
+    },
+    "JWT_SECRET": {
+      "description": "Secret key for JWT token signing",
+      "generator": "secret"
+    },
+    "JWT_EXPIRES_IN": {
+      "description": "JWT token expiration time",
+      "value": "30d"
+    },
+    "MQTT_BROKER_URL": {
+      "description": "MQTT broker URL (e.g., CloudMQTT)",
+      "required": true
+    },
+    "MQTT_USERNAME": {
+      "description": "MQTT broker username",
+      "required": false
+    },
+    "MQTT_PASSWORD": {
+      "description": "MQTT broker password",
+      "required": false
+    },
+    "MQTT_CLIENT_ID": {
+      "description": "MQTT client identifier",
+      "value": "abittoenergy-backend"
+    }
+  },
+  "scripts": {
+    "postdeploy": "pnpm run db:migrate && pnpm run db:seed"
+  }
+}
