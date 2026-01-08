@@ -6,7 +6,7 @@ const { url, host, port, name, user, password, ssl, pool } = envConfig.db;
 const base: Knex.Config = {
     client: "pg",
     connection: url
-        ? url 
+        ? url
         : {
               host,
               port,

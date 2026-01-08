@@ -37,7 +37,6 @@ type ReqWithMeta = ExpressRequest & {
     reqId?: string;
 };
 
-
 const app = express();
 app.set("json replacer", (_key: any, value: any) => (typeof value === "bigint" ? value.toString() : value));
 app.use(
@@ -46,7 +45,7 @@ app.use(
             if (req.originalUrl?.startsWith("/api/v1/webhooks")) {
                 req.rawBody = Buffer.from(buf);
             }
-        }
+        },
     })
 );
 
@@ -57,7 +56,6 @@ app.use(limiter);
 app.use(cors());
 app.use(helmet());
 app.use(expressFileUpload({ createParentPath: true, useTempFiles: true }));
-
 
 app.use((req: ReqWithMeta, res: ExpressResponse, next: NextFunction) => {
     const reqId = DataHelpers.generateReqId();

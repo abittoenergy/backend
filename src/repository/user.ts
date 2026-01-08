@@ -1,25 +1,21 @@
+import { eq } from "drizzle-orm";
 import db from "../config/db";
-
-export interface User {
-    id: string;
-    email: string;
-    username: string;
-    first_name: string | null;
-    last_name: string | null;
-    created_at: Date;
-}
+import { users, User, NewUser } from "../db/schema/users.schema";
 
 export const UserRepo = {
     async findById(id: string): Promise<User | undefined> {
-        return db<User>("users").where({ id }).first();
+        const [result] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+        return result;
     },
 
     async findByEmail(email: string): Promise<User | undefined> {
-        return db<User>("users").where({ email }).first();
+        const [result] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+        return result;
     },
 
-    async create(data: Omit<User, "id" | "created_at">): Promise<User> {
-        const [user] = await db<User>("users").insert(data).returning("*"); 
-        return user;
+    async create(data: NewUser): Promise<User> {
+        const [result] = await db.insert(users).values(data).returning();
+        return result;
     },
 };
+

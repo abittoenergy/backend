@@ -4,7 +4,6 @@ import otpGenerator from "otp-generator";
 type AnyObj = Record<string, any>;
 
 class DataHelper {
-
     static removeKeys(obj: AnyObj, keys: string[]) {
         const keySet = new Set(keys);
         const seen = new WeakSet<object>();
@@ -37,12 +36,10 @@ class DataHelper {
     // ---------- IDs & codes ----------
 
     static generateUniqueRef(): string {
-    
         return crypto.randomUUID().replace(/-/g, "");
     }
 
     static generateReqId(): string {
-      
         return crypto.randomUUID().replace(/-/g, "").toUpperCase();
     }
 
@@ -50,7 +47,7 @@ class DataHelper {
      * 6-char referral code [A-Z0-9]. Uniform and URL-safe.
      */
     static generateReferralCode(length = 6): string {
-        const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; 
+        const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
         const bytes = crypto.randomBytes(length);
         let out = "";
         for (let i = 0; i < length; i++) {
@@ -71,12 +68,11 @@ class DataHelper {
         return s
             .toLowerCase()
             .normalize("NFKD")
-            .replace(/\p{M}+/gu, "") 
+            .replace(/\p{M}+/gu, "")
             .replace(/[^a-z0-9\s]/g, " ")
             .replace(/\s+/g, " ")
             .trim();
     }
-
 
     static jaroWinkler(a: string, b: string): number {
         if (a === b) return 1;
@@ -123,7 +119,6 @@ class DataHelper {
     }
 
     static compareNameFuzzy(values: [string, string], compareWith: string, threshold = 0.88): boolean {
-
         const lhs = DataHelper.normalizeName(values.join(" "));
         const rhs = DataHelper.normalizeName(compareWith);
         return DataHelper.jaroWinkler(lhs, rhs) >= threshold;
@@ -136,13 +131,11 @@ class DataHelper {
     // ---------- Dates, phones, arrays, strings ----------
 
     static isValidDateISOString(dateString: string): boolean {
-
         const t = Date.parse(dateString);
         if (Number.isNaN(t)) return false;
         return dateString === new Date(t).toISOString();
     }
 
- 
     static formatPhoneNumber(phoneNumber: string): string {
         const digits = phoneNumber.replace(/[^\d+]/g, "").trim();
 

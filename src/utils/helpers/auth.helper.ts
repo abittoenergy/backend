@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import envConfig from "../../config/env";
 import AppError from "../appError";
-import RedisClient from "../../config/redis";
+import { redis } from "../../config/redis";
 
 interface DecodedToken {
     id: string;
@@ -42,7 +42,7 @@ class AuthHelper {
         const payload = {
             id,
             iss: envConfig.jwt.issuer,
-            aud: envConfig.jwt.audience, 
+            aud: envConfig.jwt.audience,
         };
         return jwt.sign(payload, envConfig.jwt.secret, {
             expiresIn: envConfig.jwt.expiresIn,
@@ -59,8 +59,7 @@ class AuthHelper {
     static async verifyAndDecodeToken(token: string): Promise<DecodedToken> {
         try {
             // Check if the token is blacklisted
-            const cache = await RedisClient;
-            const isBlacklisted = await cache.get(`blacklist:${token}`);
+            const isBlacklisted = await redis.get(`blacklist:${token}`);
             if (isBlacklisted) {
                 throw new AppError("Token has been revoked, please log in again", 401);
             }

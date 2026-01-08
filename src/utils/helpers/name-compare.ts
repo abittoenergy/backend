@@ -1,6 +1,4 @@
-
 export class NameCompare {
- 
     private static normalize(s: string): string {
         return s
             .toLowerCase()

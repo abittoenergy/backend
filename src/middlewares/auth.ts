@@ -7,7 +7,6 @@ class AuthMiddleware {
             if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
                 token = req.headers.authorization.split(" ")[1];
             }
-          
         } catch (error) {
             next(error);
         }
@@ -15,7 +14,6 @@ class AuthMiddleware {
 
     static restrictTo(...roles: Array<"admin" | "super-admin" | "basic-user" | "merchant">) {
         return (req: any, res: Response, next: NextFunction) => {
-           
             next();
         };
     }

@@ -7,4 +7,3 @@ import logger from "../config/logger";
 export type KeyGenerator = (req: Request) => string;
 export type SkipFn = (req: Request) => boolean;
 export type OnBlocked = (args: { req: Request; key: string; retrySecs: number }) => void | Promise<void>;
-

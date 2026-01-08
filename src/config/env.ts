@@ -59,9 +59,9 @@ const envConfig = {
         password: process.env.MQTT_PASSWORD || undefined,
         clientId: process.env.MQTT_CLIENT_ID || "abittoenergy-backend",
     },
-       redis: {
+    redis: {
         url: process.env.REDIS_URL || "redis://127.0.0.1:6379",
-        telegramTokenTtl: toNumber(process.env.TELEGRAM_TOKEN_TTL, 900)
+        telegramTokenTtl: toNumber(process.env.TELEGRAM_TOKEN_TTL, 900),
     },
 };
 

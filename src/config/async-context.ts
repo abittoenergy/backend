@@ -3,69 +3,69 @@ import { AsyncLocalStorage } from "async_hooks";
 import { RequestContext } from "../types/context.types";
 
 class AsyncContext {
-  private static instance: AsyncContext;
-  private asyncLocalStorage: AsyncLocalStorage<RequestContext>;
+    private static instance: AsyncContext;
+    private asyncLocalStorage: AsyncLocalStorage<RequestContext>;
 
-  private constructor() {
-    this.asyncLocalStorage = new AsyncLocalStorage();
-  }
-
-  static getInstance(): AsyncContext {
-    if (!AsyncContext.instance) {
-      AsyncContext.instance = new AsyncContext();
+    private constructor() {
+        this.asyncLocalStorage = new AsyncLocalStorage();
     }
-    return AsyncContext.instance;
-  }
 
-  run<T>(context: RequestContext, callback: () => T): T {
-    return this.asyncLocalStorage.run(context, callback);
-  }
+    static getInstance(): AsyncContext {
+        if (!AsyncContext.instance) {
+            AsyncContext.instance = new AsyncContext();
+        }
+        return AsyncContext.instance;
+    }
 
-  getContext(): RequestContext | undefined {
-    return this.asyncLocalStorage.getStore();
-  }
+    run<T>(context: RequestContext, callback: () => T): T {
+        return this.asyncLocalStorage.run(context, callback);
+    }
 
-  getReqId(): string | undefined {
-    return this.getContext()?.reqId;
-  }
+    getContext(): RequestContext | undefined {
+        return this.asyncLocalStorage.getStore();
+    }
 
-  getUserId(): string | undefined {
-    return this.getContext()?.userId;
-  }
+    getReqId(): string | undefined {
+        return this.getContext()?.reqId;
+    }
 
-  getUserAgent(): string | undefined {
-    return this.getContext()?.userAgent;
-  }
+    getUserId(): string | undefined {
+        return this.getContext()?.userId;
+    }
 
-  getIp(): string | undefined {
-    return this.getContext()?.ip;
-  }
+    getUserAgent(): string | undefined {
+        return this.getContext()?.userAgent;
+    }
 
-  enrichWithContext(data: any = {}): any {
-    const context = this.getContext();
-    if (!context) return data;
+    getIp(): string | undefined {
+        return this.getContext()?.ip;
+    }
 
-    return {
-      ...data,
-      reqId: context.reqId,
-      userId: context.userId,
-      userAgent: context.userAgent,
-      ip: context.ip,
-      path: context.path,
-      startTime: context.startTime
-    };
-  }
-  getAuditContext() {
-    const ctx = this.getContext();
-    return {
-      ip: ctx?.ip || null,
-      userAgent: ctx?.userAgent || null,
-      requestId: ctx?.reqId || null,
-      forwardedFor: ctx?.forwardedFor || null,
-      userId: ctx?.userId || null,
-      startTime: ctx?.startTime || null
-    };
-  }
+    enrichWithContext(data: any = {}): any {
+        const context = this.getContext();
+        if (!context) return data;
+
+        return {
+            ...data,
+            reqId: context.reqId,
+            userId: context.userId,
+            userAgent: context.userAgent,
+            ip: context.ip,
+            path: context.path,
+            startTime: context.startTime,
+        };
+    }
+    getAuditContext() {
+        const ctx = this.getContext();
+        return {
+            ip: ctx?.ip || null,
+            userAgent: ctx?.userAgent || null,
+            requestId: ctx?.reqId || null,
+            forwardedFor: ctx?.forwardedFor || null,
+            userId: ctx?.userId || null,
+            startTime: ctx?.startTime || null,
+        };
+    }
 }
 
 export const requestContextManager = AsyncContext.getInstance();

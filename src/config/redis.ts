@@ -10,7 +10,7 @@ export default class RedisManager {
     private client: RedisClient | null = null;
     private isConnecting = false;
 
-    private constructor() { }
+    private constructor() {}
 
     static getInstance(): RedisManager {
         if (!RedisManager.instance) {
@@ -65,7 +65,7 @@ export default class RedisManager {
                 "Redis connection initiated",
                 withOperationContext("system", {
                     url: envConfig.redis.url,
-                    action: "redis_connection_initiated"
+                    action: "redis_connection_initiated",
                 })
             );
 
@@ -74,7 +74,7 @@ export default class RedisManager {
                 enableReadyCheck: true,
                 lazyConnect: true,
                 keepAlive: 30000,
-                reconnectOnError: (err) => err.message.includes("READONLY")
+                reconnectOnError: (err) => err.message.includes("READONLY"),
             });
 
             this.client.on("connect", () => {
@@ -86,7 +86,7 @@ export default class RedisManager {
                     "Redis connection error:",
                     withOperationContext("system", {
                         error: error instanceof Error ? error.message : "Unknown error",
-                        action: "redis_connection_error"
+                        action: "redis_connection_error",
                     })
                 );
             });
@@ -95,7 +95,7 @@ export default class RedisManager {
                 logger.warn(
                     "Redis connection closed",
                     withOperationContext("system", {
-                        action: "redis_connection_closed"
+                        action: "redis_connection_closed",
                     })
                 );
             });
@@ -122,7 +122,7 @@ export default class RedisManager {
                             withOperationContext("system", {
                                 message: error instanceof Error ? error.message : "Unknown error",
                                 stack: error instanceof Error ? error.message : "Unknown error",
-                                action: "schedule_jobs_error"
+                                action: "schedule_jobs_error",
                             })
                         )
                     );
@@ -137,7 +137,7 @@ export default class RedisManager {
                 withOperationContext("system", {
                     error: error instanceof Error ? error.message : "Unknown error",
                     stack: error instanceof Error ? error.stack : undefined,
-                    action: "redis_connection_failed"
+                    action: "redis_connection_failed",
                 })
             );
             this.client = null;
@@ -151,14 +151,13 @@ export default class RedisManager {
     private async scheduleJobs(): Promise<void> {
         logger.info("scheduleJobs() entering");
         try {
-
         } catch (err: any) {
             logger.error(
                 "scheduleJobs() failed",
                 withOperationContext("system", {
                     message: err?.message,
                     stack: err?.stack,
-                    action: "scheduleJobs_failed"
+                    action: "scheduleJobs_failed",
                 })
             );
         }
@@ -171,7 +170,7 @@ export default class RedisManager {
             logger.info(
                 "Redis connection closed",
                 withOperationContext("system", {
-                    action: "redis_connection_closed"
+                    action: "redis_connection_closed",
                 })
             );
         }
@@ -228,7 +227,7 @@ export const redis = {
     expire: (key: string, ttl: number) => redisManager.expire(key, ttl),
     ttl: (key: string) => redisManager.ttl(key),
     exists: (...keys: string[]) => redisManager.exists(...keys),
-    getClient: () => redisManager.getClientOrConnect()
+    getClient: () => redisManager.getClientOrConnect(),
 };
 
 // Graceful shutdown

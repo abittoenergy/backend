@@ -14,17 +14,18 @@ let db: ReturnType<typeof drizzle> | null = null;
 export type DbClient =
     | PostgresJsDatabase<Record<string, unknown>>
     | PgTransaction<
-        PostgresJsQueryResultHKT,
-        Record<string, unknown>,
-        ExtractTablesWithRelations<Record<string, unknown>>
-    >;
+          PostgresJsQueryResultHKT,
+          Record<string, unknown>,
+          ExtractTablesWithRelations<Record<string, unknown>>
+      >;
 
 export function getDb() {
     if (db) return db;
 
     const connectionUrl =
         envConfig.db.url ||
-        `postgresql://${envConfig.db.user}:${envConfig.db.password}@${envConfig.db.host}:${envConfig.db.port}/${envConfig.db.name
+        `postgresql://${envConfig.db.user}:${envConfig.db.password}@${envConfig.db.host}:${envConfig.db.port}/${
+            envConfig.db.name
         }${envConfig.db.ssl ? "?sslmode=require" : ""}`;
 
     logger.info(
@@ -36,18 +37,18 @@ export function getDb() {
             user: envConfig.db.user,
             ssl: envConfig.db.ssl,
             poolSize: envConfig.db.pool.max,
-            action: "database_connection_initiated"
+            action: "database_connection_initiated",
         })
     );
 
     connection = postgres(connectionUrl, {
         max: envConfig.db.pool.max,
         idle_timeout: envConfig.db.pool.idleTimeoutMillis / 1000,
-        connect_timeout: 10
+        connect_timeout: 10,
     });
 
     db = drizzle(connection, {
-        schema
+        schema,
     });
 
     const startTime = Date.now();
@@ -59,7 +60,7 @@ export function getDb() {
                     host: envConfig.db.host,
                     database: envConfig.db.name,
                     duration_ms: Date.now() - startTime,
-                    action: "database_connected"
+                    action: "database_connected",
                 })
             )
         )
@@ -72,7 +73,7 @@ export function getDb() {
                     host: envConfig.db.host,
                     database: envConfig.db.name,
                     duration_ms: Date.now() - startTime,
-                    action: "error_connecting_to_database"
+                    action: "error_connecting_to_database",
                 })
             );
         });
@@ -87,7 +88,7 @@ export async function closeDb() {
             "Database shutdown initiated",
             withOperationContext("system", {
                 duration_ms: Date.now() - startTime,
-                action: "database_shutdown_initiated"
+                action: "database_shutdown_initiated",
             })
         );
         await connection.end();
@@ -95,7 +96,7 @@ export async function closeDb() {
             "Psql connection closed",
             withOperationContext("system", {
                 duration_ms: Date.now() - startTime,
-                action: "psql_connection_closed"
+                action: "psql_connection_closed",
             })
         );
         connection = null;

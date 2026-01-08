@@ -2,7 +2,6 @@ import Joi from "joi";
 
 export default class AuthValidator {
     static signup(data: any): Joi.ValidationResult {
-
         if (data.firstName) {
             data.firstName = data.firstName
                 .replace(/[^A-Za-z\s-]/g, " ")
@@ -108,7 +107,6 @@ export default class AuthValidator {
         return schema.validate(data);
     }
 
-  
     static forgotPassword(data: any): Joi.ValidationResult {
         const schema = Joi.object().keys({
             email: Joi.string().email().required(),
