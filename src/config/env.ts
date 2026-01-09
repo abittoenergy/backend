@@ -9,7 +9,8 @@ function parseDbUrl(dbUrl: string) {
         const password = decodeURIComponent(u.password || "");
         const name = (u.pathname || "").replace(/^\//, "");
         const sslMode = u.searchParams.get("sslmode");
-        const ssl = process.env.DB_SSL === "true" || sslMode === "require" || sslMode === "verify-full";
+        const isProd = process.env.NODE_ENV === "production";
+        const ssl = process.env.DB_SSL === "true" || sslMode === "require" || (isProd && sslMode !== "disable");
 
         return { url: dbUrl, host, port, user, password, name, ssl };
     } catch {
@@ -17,7 +18,7 @@ function parseDbUrl(dbUrl: string) {
     }
 }
 
-const DB_URL = process.env.DATABASE_URL
+const DB_URL = process.env.DB_URL || process.env.DATABASE_URL;
 
 const parsed = DB_URL ? parseDbUrl(DB_URL) : null;
 
