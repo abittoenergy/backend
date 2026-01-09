@@ -9,7 +9,8 @@ const mqttOptions: IClientOptions = {
     clean: true,
     connectTimeout: 4000,
     reconnectPeriod: 5000,
-    protocol:'mqtts'
+    protocol:'mqtts',
+    port: 8883
 };
 
 if (envConfig.mqtt.username) {
@@ -20,6 +21,9 @@ if (envConfig.mqtt.password) {
 }
 if(envConfig.mqtt.protocol){
     mqttOptions.protocol = envConfig.mqtt.protocol as MqttProtocol;
+}
+if(envConfig.mqtt.port){
+    mqttOptions.port = Number(envConfig.mqtt.port);
 }
 export function connectMqtt(): MqttClient {
     if (client) {
