@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - develop
+      - staging
 
 jobs:
   deploy:
@@ -16,7 +16,7 @@ jobs:
         run: curl https://cli-assets.heroku.com/install.sh | sh
 
       - name: Deploy to Staging
-        if: github.ref == 'refs/heads/develop'
+        if: github.ref == 'refs/heads/staging'
         uses: akhileshns/heroku-deploy@v3.13.15
         with:
           heroku_api_key: ${{ secrets.HEROKU_API_KEY }}

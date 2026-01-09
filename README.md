@@ -134,8 +134,8 @@ heroku config:set MQTT_BROKER_URL=mqtts://staging-broker:8883 -a abittoenergy-st
 # Production Credentials
 heroku config:set MQTT_BROKER_URL=mqtts://prod-broker:8883 -a abittoenergy-production
 5. Deployment Workflow (The Pro Way)
-Push to Staging: Deploy your develop branch to staging for testing.
-git push staging develop:main
+Push to Staging: Deploy your staging branch to staging for testing.
+git push staging staging:main
 Promote to Production: Once verified in staging, promote the exact same build to production via the Heroku Dashboard or CLI:
 heroku pipelines:promote -r staging
 
@@ -145,13 +145,13 @@ Automated workflows are now active in the .github/workflows directory.
 1. CI Workflow (
 ci.yml
 )
-Runs on every push or PR to main and develop.
+Runs on every push or PR to main and staging.
 Uses pnpm for fast dependency installation.
 Runs Linting and Build verification.
 2. Deployment Workflow (
 deploy.yml
 )
-Staging: Automatically deploys to Heroku when code is pushed to the develop branch.
+Staging: Automatically deploys to Heroku when code is pushed to the staging branch.
 Production: Automatically deploys to Heroku when code is pushed to the main branch.
 3. Required GitHub Secrets
 To make the deployment work, add these in your GitHub Repo settings:
