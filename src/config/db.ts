@@ -14,18 +14,17 @@ let db: ReturnType<typeof drizzle> | null = null;
 export type DbClient =
     | PostgresJsDatabase<Record<string, unknown>>
     | PgTransaction<
-          PostgresJsQueryResultHKT,
-          Record<string, unknown>,
-          ExtractTablesWithRelations<Record<string, unknown>>
-      >;
+        PostgresJsQueryResultHKT,
+        Record<string, unknown>,
+        ExtractTablesWithRelations<Record<string, unknown>>
+    >;
 
 export function getDb() {
     if (db) return db;
 
     const connectionUrl =
         envConfig.db.url ||
-        `postgresql://${envConfig.db.user}:${envConfig.db.password}@${envConfig.db.host}:${envConfig.db.port}/${
-            envConfig.db.name
+        `postgresql://${envConfig.db.user}:${envConfig.db.password}@${envConfig.db.host}:${envConfig.db.port}/${envConfig.db.name
         }${envConfig.db.ssl ? "?sslmode=require" : ""}`;
 
     logger.info(
@@ -45,7 +44,9 @@ export function getDb() {
         max: envConfig.db.pool.max,
         idle_timeout: envConfig.db.pool.idleTimeoutMillis / 1000,
         connect_timeout: 10,
+        ssl: envConfig.db.ssl ? { rejectUnauthorized: false } : false,
     });
+
 
     db = drizzle(connection, {
         schema,
