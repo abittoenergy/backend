@@ -17,7 +17,7 @@ function parseDbUrl(dbUrl: string) {
     }
 }
 
-const DB_URL = process.env.DB_URL || process.env.DATABASE_URL;
+const DB_URL = process.env.DATABASE_URL
 
 const parsed = DB_URL ? parseDbUrl(DB_URL) : null;
 
