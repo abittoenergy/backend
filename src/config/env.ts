@@ -58,6 +58,7 @@ const envConfig = {
         username: process.env.MQTT_USERNAME || undefined,
         password: process.env.MQTT_PASSWORD || undefined,
         clientId: process.env.MQTT_CLIENT_ID || "abittoenergy-backend",
+        protocol: process.env.MQTT_PROTOCOL || "mqtts",
     },
     redis: {
         url: process.env.REDIS_URL || "redis://127.0.0.1:6379",

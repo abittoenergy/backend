@@ -1,4 +1,4 @@
-import mqtt, { MqttClient, IClientOptions } from "mqtt";
+import mqtt, { MqttClient, IClientOptions, MqttProtocol } from "mqtt";
 import envConfig from "./env";
 import logger from "./logger";
 
@@ -9,6 +9,7 @@ const mqttOptions: IClientOptions = {
     clean: true,
     connectTimeout: 4000,
     reconnectPeriod: 5000,
+    protocol:'mqtts'
 };
 
 if (envConfig.mqtt.username) {
@@ -17,7 +18,9 @@ if (envConfig.mqtt.username) {
 if (envConfig.mqtt.password) {
     mqttOptions.password = envConfig.mqtt.password;
 }
-
+if(envConfig.mqtt.protocol){
+    mqttOptions.protocol = envConfig.mqtt.protocol as MqttProtocol;
+}
 export function connectMqtt(): MqttClient {
     if (client) {
         return client;
