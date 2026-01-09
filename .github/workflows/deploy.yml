@@ -12,6 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Heroku CLI
+        run: curl https://cli-assets.heroku.com/install.sh | sh
+
       - name: Deploy to Staging
         if: github.ref == 'refs/heads/develop'
         uses: akhileshns/heroku-deploy@v3.13.15

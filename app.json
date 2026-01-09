@@ -1,7 +1,7 @@
 {
   "name": "abittoenergy-backend",
   "description": "IoT backend for Abittoenergy - communicates with devices via MQTT",
-  "repository": "https://github.com/abittoenergy/backend",
+  "repository": "https://github.com/Abitto-org/backend",
   "keywords": [
     "node",
     "express",

@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "description": "IoT backend for Abittoenergy - communicates with devices via MQTT",
     "main": "index.js",
-    "repository": "https://github.com/abittoenergy/backend",
+    "repository": "https://github.com/Abitto-org/backend",
     "author": "Abittoenergy Team",
     "license": "MIT",
     "engines": {
