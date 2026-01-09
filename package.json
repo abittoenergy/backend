@@ -7,14 +7,13 @@
     "author": "Abittoenergy Team",
     "license": "MIT",
     "engines": {
-        "node": ">=20.11.1",
-        "npm": ">=10.8.2"
+        "node": ">=20.11.1"
     },
     "scripts": {
         "dev": "nodemon --config nodemon.json",
         "build": "tsc -p tsconfig.json",
         "start": "NODE_OPTIONS=--enable-source-maps node dist/index.js",
-        "prod": "npm run build && npm run start",
+        "prod": "pnpm run build && pnpm run start",
         "lint:format": "prettier --write \"{src,tests}/**/*.{ts,js,json,md}\"",
         "db:migrate": "knex migrate:latest --knexfile src/config/knex.ts --esm",
         "db:rollback": "knex migrate:rollback --knexfile src/config/knex.ts --esm",
