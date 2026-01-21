@@ -3,9 +3,8 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import path from "path";
-import dotenv from "dotenv";
-
-dotenv.config();
+import "dotenv/config";
+import envConfig from "../config/env";
 
 const toNumber = (v: any, d: number) => (v == null || v === "" ? d : Number(v));
 
@@ -45,9 +44,14 @@ async function runMigrations() {
     }
 
     console.log("🔄 Connecting to database for migrations...");
-    const migrationClient = postgres(connectionUrl, { max: 1 });
+    const isSsl = parsed?.ssl || process.env.DB_SSL === "true";
+    const migrationClient = postgres(connectionUrl, {
+      max: 1,
+      idle_timeout: envConfig.db.pool.idleTimeoutMillis / 1000,
+      connect_timeout: 10,
+      ssl: isSsl ? { rejectUnauthorized: false } : undefined,
+    });
 
-    // Ensure public schema exists and set search_path
     console.log("🔧 Setting up database schema...");
     await migrationClient`CREATE SCHEMA IF NOT EXISTS public`;
     await migrationClient`SET search_path TO public`;
