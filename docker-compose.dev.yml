@@ -20,6 +20,8 @@ services:
       REDIS_URL: redis://redis:6379
       MQTT_BROKER_URL: mqtt://mqtt:1883
       MQTT_CLIENT_ID: abittoenergy-backend
+      MQTT_PORT: 1883
+      MQTT_PROTOCOL: mqtt
     volumes:
       - .:/usr/src/app
       - /usr/src/app/node_modules
@@ -65,6 +67,7 @@ services:
     ports:
       - "1883:1883"
       - "9001:9001"
+      - "8883:8883"
     volumes:
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log

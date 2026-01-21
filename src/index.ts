@@ -49,7 +49,7 @@ app.use(
     })
 );
 
-app.set("trust proxy", true);
+// app.set("trust proxy", true);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json({ limit: "100mb" }));
 app.use(limiter);
@@ -92,7 +92,5 @@ app.use(globalErrorHandler);
 const port = process.env.PORT || 8000;
 app.listen(port, () => {
     logger.info(`Abittoenergy API running on port: ${port}`);
-
-    // Initialize MQTT connection for IoT device communication
     connectMqtt();
 });

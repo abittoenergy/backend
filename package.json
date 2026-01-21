@@ -14,10 +14,10 @@
         "build": "tsc -p tsconfig.json",
         "start": "NODE_OPTIONS=--enable-source-maps node dist/index.js",
         "prod": "pnpm run build && pnpm run start",
+        "db:generate": "drizzle-kit generate",
         "lint:format": "prettier --write \"{src,tests}/**/*.{ts,js,json,md}\"",
-        "db:migrate": "knex migrate:latest --knexfile src/config/knex.ts --esm",
-        "db:rollback": "knex migrate:rollback --knexfile src/config/knex.ts --esm",
-        "db:seed": "knex seed:run --knexfile src/config/knex.ts --esm",
+        "db:migrate": "tsx src/db/migrate.ts",
+        "db:migrate:prod": "node dist/db/migrate.js",
         "ci": "pnpm run build"
     },
     "dependencies": {
@@ -81,12 +81,15 @@
         "@types/node-fetch": "^3.0.3",
         "@types/otp-generator": "^4.0.0",
         "@types/pdfkit": "^0.13.9",
+        "@types/pg": "^8.16.0",
         "@types/qrcode": "^1.5.4",
         "@types/request-ip": "^0.0.37",
         "@types/uuid": "^8.3.4",
+        "drizzle-kit": "^0.31.8",
         "nodemon": "^2.0.15",
         "prettier": "2.7.1",
         "ts-node": "^10.4.0",
+        "tsx": "^4.21.0",
         "typescript": "^5.9.3"
     },
     "packageManager": "pnpm@10.15.0+sha512.486ebc259d3e999a4e8691ce03b5cac4a71cbeca39372a9b762cb500cfdf0873e2cb16abe3d951b1ee2cf012503f027b98b6584e4df22524e0c7450d9ec7aa7b"
