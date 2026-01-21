@@ -142,4 +142,3 @@ dist/
 *.p8
 
 # Drizzle Migrations
-src/db/migrations/meta/
