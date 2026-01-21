@@ -23,7 +23,7 @@ import DataHelpers from "./utils/helpers/data.helpers";
 import AppRouter from "./routes/app.routes";
 import AppError from "./utils/appError";
 import "./config/db";
-import "./config/redis";
+// import "./config/redis";
 import { connectMqtt } from "./config/mqtt";
 
 const limiter = rateLimit({
