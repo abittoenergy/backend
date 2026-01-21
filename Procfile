@@ -1,2 +1,2 @@
 web: pnpm run start
-release: pnpm run db:migrate:prodemote
+release: pnpm run db:migrate:prod
