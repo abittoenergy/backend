@@ -64,16 +64,26 @@ class DataHelper {
         });
     }
 
-    /**
-     * Generates a 10-character alphanumeric meter number.
-     */
     static generateMeterNumber(): string {
-        return otpGenerator.generate(10, {
-            upperCaseAlphabets: true,
+        const part1 = otpGenerator.generate(3, {
+            upperCaseAlphabets: false,
             specialChars: false,
             lowerCaseAlphabets: false,
             digits: true,
         });
+        const part2 = otpGenerator.generate(3, {
+            upperCaseAlphabets: false,
+            specialChars: false,
+            lowerCaseAlphabets: false,
+            digits: true,
+        });
+        const part3 = otpGenerator.generate(3, {
+            upperCaseAlphabets: false,
+            specialChars: false,
+            lowerCaseAlphabets: false,
+            digits: true,
+        });
+        return `${part1}-${part2}-${part3}`;
     }
 
     private static normalizeName(s: string): string {

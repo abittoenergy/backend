@@ -18,7 +18,6 @@ export default class MeterService {
 
   static async registerMeter(deviceId: string) {
 
-    // check device id is already registered
     const existingMeter = await MeterRepo.findByDeviceId(deviceId);
     if (existingMeter) {
       throw new AppError("Meter already registered", ResponseHelper.BAD_REQUEST);
@@ -37,7 +36,7 @@ export default class MeterService {
 
     return await MeterRepo.create({
       deviceId,
-      meterNumber: "AB-" + uniqueMeterNumber,
+      meterNumber: uniqueMeterNumber,
       status: MeterStatus.REGISTERED,
     });
   }
