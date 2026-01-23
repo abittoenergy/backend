@@ -8,6 +8,11 @@ export const MeterRepo = {
     return result;
   },
 
+  async findByMeterNumber(meterNumber: string): Promise<Meter | undefined> {
+    const [result] = await db.select().from(meters).where(eq(meters.meterNumber, meterNumber)).limit(1);
+    return result;
+  },
+
   async findById(id: string): Promise<Meter | undefined> {
     const [result] = await db.select().from(meters).where(eq(meters.id, id)).limit(1);
     return result;
@@ -36,10 +41,10 @@ export const MeterRepo = {
     return result;
   },
 
-  async linkUser(deviceId: string, userId: string): Promise<Meter | undefined> {
+  async linkUser(deviceId: string, userId: string, meterNumber?: string): Promise<Meter | undefined> {
     const [result] = await db
       .update(meters)
-      .set({ userId, status: MeterStatus.REGISTERED, updatedAt: new Date() })
+      .set({ userId, meterNumber, status: MeterStatus.REGISTERED, updatedAt: new Date() })
       .where(eq(meters.deviceId, deviceId))
       .returning();
     return result;

@@ -6,13 +6,13 @@ import MeterService from "../services/meter.service";
 
 export default class MeterController {
   static registerMeter = ControllerHelper.createHandler("register-meter", async (req, res, next) => {
-    const { deviceId, userId } = req.body;
+    const { deviceId } = req.body;
 
-    if (!deviceId || !userId) {
-      return next(new AppError("deviceId and userId are required", ResponseHelper.BAD_REQUEST));
+    if (!deviceId) {
+      return next(new AppError("deviceId is required", ResponseHelper.BAD_REQUEST));
     }
 
-    const data = await MeterService.registerMeterToUser(deviceId, userId);
+    const data = await MeterService.registerMeter(deviceId);
 
     ResponseHelper.sendSuccessResponse(res, {
       message: "Meter registered successfully",
@@ -31,19 +31,4 @@ export default class MeterController {
     });
   });
 
-  static updateValve = ControllerHelper.createHandler("update-valve", async (req, res, next) => {
-    const { deviceId } = req.params;
-    const { status } = req.body;
-
-    if (typeof status !== "boolean") {
-      return next(new AppError("status must be a boolean", ResponseHelper.BAD_REQUEST));
-    }
-
-    const data = await MeterService.updateValveStatus(deviceId, status);
-
-    ResponseHelper.sendSuccessResponse(res, {
-      message: "Valve status updated successfully",
-      data,
-    });
-  });
 }

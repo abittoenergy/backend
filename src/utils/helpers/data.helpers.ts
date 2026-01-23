@@ -64,6 +64,18 @@ class DataHelper {
         });
     }
 
+    /**
+     * Generates a 10-character alphanumeric meter number.
+     */
+    static generateMeterNumber(): string {
+        return otpGenerator.generate(10, {
+            upperCaseAlphabets: true,
+            specialChars: false,
+            lowerCaseAlphabets: false,
+            digits: true,
+        });
+    }
+
     private static normalizeName(s: string): string {
         return s
             .toLowerCase()

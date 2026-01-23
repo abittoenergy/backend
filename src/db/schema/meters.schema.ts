@@ -27,12 +27,14 @@ export const meters = pgTable(
     status: text("status", { enum: METER_STATUSES }).$type<MeterStatus>().notNull().default(MeterStatus.UNREGISTERED),
     userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
     valveStatus: boolean("valve_status").notNull().default(false),
+    meterNumber: varchar("meter_number", { length: 50 }).unique(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (t) => [
     index("meters_device_id_index").on(t.deviceId),
     index("meters_user_id_index").on(t.userId),
+    index("meters_meter_number_index").on(t.meterNumber),
   ]
 );
 

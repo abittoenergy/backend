@@ -2,44 +2,43 @@ import { MeterRepo } from "../repository/meter";
 import { MeterStatus } from "../db/schema/meters.schema";
 import AppError from "../utils/appError";
 import ResponseHelper from "../utils/helpers/response.helper";
+import DataHelper from "../utils/helpers/data.helpers";
 
 export default class MeterService {
-  /**
-   * Retrieves meter info by device ID.
-   * If the meter does not exist, it is created with UNREGISTERED status.
-   */
+
   static async getMeterStatus(deviceId: string) {
     let meter = await MeterRepo.findByDeviceId(deviceId);
 
     if (!meter) {
-      meter = await MeterRepo.create({
-        deviceId,
-        status: MeterStatus.UNREGISTERED,
-      });
+      throw new AppError("Meter not found", ResponseHelper.RESOURCE_NOT_FOUND);
     }
 
     return meter;
   }
 
-  static async registerMeterToUser(deviceId: string, userId: string) {
-    const meter = await MeterRepo.findByDeviceId(deviceId);
-    if (!meter) {
-      throw new AppError("Meter not found", ResponseHelper.RESOURCE_NOT_FOUND);
+  static async registerMeter(deviceId: string) {
+
+    // check device id is already registered
+    const existingMeter = await MeterRepo.findByDeviceId(deviceId);
+    if (existingMeter) {
+      throw new AppError("Meter already registered", ResponseHelper.BAD_REQUEST);
     }
 
-    if (meter.userId) {
-      throw new AppError("Meter already linked to a user", ResponseHelper.BAD_REQUEST);
+    let uniqueMeterNumber: string | undefined;
+    for (let i = 0; i < 10; i++) {
+      uniqueMeterNumber = DataHelper.generateMeterNumber();
+      const existingMeter = await MeterRepo.findByMeterNumber(uniqueMeterNumber);
+      if (!existingMeter) break;
     }
 
-    return await MeterRepo.linkUser(deviceId, userId);
-  }
-
-  static async updateValveStatus(deviceId: string, status: boolean) {
-    const meter = await MeterRepo.findByDeviceId(deviceId);
-    if (!meter) {
-      throw new AppError("Meter not found", ResponseHelper.RESOURCE_NOT_FOUND);
+    if (!uniqueMeterNumber) {
+      throw new AppError("Failed to generate unique meter number", ResponseHelper.INTERNAL_SERVER_ERROR);
     }
 
-    return await MeterRepo.updateValveStatus(deviceId, status);
+    return await MeterRepo.create({
+      deviceId,
+      meterNumber: "AB-" + uniqueMeterNumber,
+      status: MeterStatus.REGISTERED,
+    });
   }
 }
