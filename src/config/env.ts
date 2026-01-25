@@ -66,6 +66,13 @@ const envConfig = {
         url: process.env.REDIS_URL || "redis://127.0.0.1:6379",
         telegramTokenTtl: toNumber(process.env.TELEGRAM_TOKEN_TTL, 900),
     },
+    email: {
+        host: process.env.SMTP_HOST || "smtp.mailtrap.io",
+        port: toNumber(process.env.SMTP_PORT, 2525),
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+        from: process.env.SMTP_FROM || "Abittoenergy <no-reply@abittoenergy.com>",
+    },
 };
 
 export default envConfig;

@@ -25,6 +25,7 @@ import AppError from "./utils/appError";
 import "./config/db";
 // import "./config/redis";
 import { connectMqtt } from "./config/mqtt";
+import EmailService from "./services/email.service";
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -93,4 +94,5 @@ const port = process.env.PORT || 8000;
 app.listen(port, () => {
     logger.info(`Abittoenergy API running on port: ${port}`);
     connectMqtt();
+    EmailService.verifyConnection();
 });

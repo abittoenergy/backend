@@ -5,7 +5,9 @@ services:
       dockerfile: Dockerfile.dev
     container_name: abittoenergy-app
     ports:
-      - "5555:5555"         
+      - "5555:5555"      
+    env_file:
+      - .env   
     environment:
       NODE_ENV: development
       PORT: 5555
