@@ -6,6 +6,7 @@ import OTPService from "./otp.service";
 import EmailService from "./email.service";
 import { User } from "../db/schema/users.schema";
 import { OTP_TYPES, OtpType } from "../utils/constants/otp";
+import envConfig from "../config/env";
 
 export default class AuthService {
   /**
@@ -48,7 +49,7 @@ export default class AuthService {
       throw new AppError("Account is not active", ResponseHelper.UNAUTHORIZED);
     }
 
-    if(!user.emailVerified){
+    if (!user.emailVerified) {
       await OTPService.sendOTP(data.email, OTP_TYPES.SIGNUP_VERIFICATION);
       throw new AppError("Email is not verified, please verify your email", ResponseHelper.UNAUTHORIZED);
     }
@@ -68,7 +69,7 @@ export default class AuthService {
     }
 
     if (type === OTP_TYPES.SIGNUP_VERIFICATION) {
-     await UserRepo.update(user.id, {
+      await UserRepo.update(user.id, {
         isActive: true,
         emailVerified: true,
         emailVerifiedAt: new Date(),
@@ -80,6 +81,7 @@ export default class AuthService {
         template: "welcome",
         context: {
           email,
+          loginUrl: `${envConfig.baseUrl}/login`,
         },
       });
     }
