@@ -15,6 +15,13 @@
       "when": 1769170842090,
       "tag": "0001_windy_callisto",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1769429497746,
+      "tag": "0002_open_ink",
+      "breakpoints": true
     }
   ]
 }

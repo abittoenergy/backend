@@ -17,5 +17,10 @@ export const UserRepo = {
         const [result] = await db.insert(users).values(data).returning();
         return result;
     },
+
+    async update(id: string, data: Partial<NewUser>): Promise<User | undefined> {
+        const [result] = await db.update(users).set(data).where(eq(users.id, id)).returning();
+        return result;
+    },
 };
 

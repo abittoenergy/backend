@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .container {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 40px;
+            background-color: #ffffff;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header img {
+            max-width: 150px;
+        }
+        .content {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #333333;
+        }
+        .otp-code {
+            display: block;
+            width: fit-content;
+            margin: 30px auto;
+            padding: 15px 30px;
+            background-color: #f4f7f6;
+            border: 2px dashed #007bff;
+            border-radius: 8px;
+            font-size: 32px;
+            font-weight: bold;
+            color: #007bff;
+            letter-spacing: 5px;
+        }
+        .footer {
+            margin-top: 40px;
+            font-size: 12px;
+            color: #999999;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Abittoenergy Verification</h2>
+        </div>
+        <div class="content">
+            <p>Hello,</p>
+            <p>To continue with your request, please use the verification code below. This code is valid for <strong>{{expiryMinutes}} minutes</strong>.</p>
+            
+            <div class="otp-code">{{otp}}</div>
+            
+            <p>If you did not request this code, please ignore this email or contact support if you have concerns.</p>
+            
+            <p>Best regards,<br>The Abittoenergy Team</p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2026 Abittoenergy. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

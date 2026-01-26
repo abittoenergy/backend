@@ -29,11 +29,7 @@ export const users = pgTable(
     {
         id: uuid("id").defaultRandom().primaryKey(),
         email: varchar("email", { length: 255 }).notNull().unique(),
-        username: varchar("username", { length: 100 }).unique(),
         passwordHash: varchar("password_hash", { length: 255 }),
-        unlockPinHash: varchar("unlock_pin_hash", { length: 255 }),
-        txnPinHash: varchar("txn_pin_hash", { length: 255 }),
-        biometricEnabled: boolean("biometric_enabled").default(false),
         firstName: varchar("first_name", { length: 100 }),
         lastName: varchar("last_name", { length: 100 }),
         phoneNumber: varchar("phone_number", { length: 20 }),
@@ -49,8 +45,7 @@ export const users = pgTable(
         lockoutUntil: timestamp("lockout_until"),
         createdAt: timestamp("created_at").defaultNow().notNull(),
         updatedAt: timestamp("updated_at").defaultNow().notNull(),
-        mfaEnabled: boolean("mfa_enabled").notNull().default(false),
-        mfaSecretEnc: text("mfa_secret_enc"),
+      
         deleteRequestedAt: timestamp("delete_requested_at"),
         deleteEffectiveAt: timestamp("delete_effective_at"),
         isArchived: boolean("is_archived").notNull().default(false),
@@ -64,9 +59,10 @@ export const users = pgTable(
         telegramLinkedAt: timestamp("telegram_linked_at", { withTimezone: true }),
         adminRoleId: uuid("admin_role_id").references(() => adminRoles.id, { onDelete: "set null" }),
         adminGroupId: uuid("admin_group_id").references(() => adminGroups.id, { onDelete: "set null" }),
+        
     },
     (t) => [
-        uniqueIndex("users_username_lower_unique").on(sql`lower(${t.username})`),
+        uniqueIndex("users_email_lower_unique").on(sql`lower(${t.email})`),
         index("users_telegram_chat_id_index").on(t.telegramChatId),
     ]
 );

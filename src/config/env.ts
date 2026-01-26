@@ -63,7 +63,7 @@ const envConfig = {
         port: process.env.MQTT_PORT || 8883,
     },
     redis: {
-        url: process.env.REDIS_URL || "redis://127.0.0.1:6379",
+        url: process.env.REDIS_URL || process.env.REDISCLOUD_URL || "redis://127.0.0.1:6379",
         telegramTokenTtl: toNumber(process.env.TELEGRAM_TOKEN_TTL, 900),
     },
     email: {
