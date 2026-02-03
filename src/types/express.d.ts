@@ -1,10 +1,11 @@
 import { User } from "../repository/user";
 
+export { };
+
 declare module "express-serve-static-core" {
     interface Request {
-        user?: User & {
-            username?: string;
-        };
+        user?: Partial<User> & { username?: string };
         userId?: string;
+        id?: string;
     }
 }

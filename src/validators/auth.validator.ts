@@ -45,8 +45,29 @@ export const verifyOTPSchema = z.object({
 });
 export type VerifyOTPInput = z.infer<typeof verifyOTPSchema>;
 
+export const updateProfileOnboardingSchema = z.object({
+    firstName: z.string({ required_error: "First name is required" }),
+    lastName: z.string({ required_error: "Last name is required" }),
+    phoneNumber: z.string({ required_error: "Phone number is required" }),
+    gender: z.enum(["male", "female", "other"], { required_error: "Gender is required" }),
+    nin: z.string({ required_error: "NIN is required" }).max(12, { message: "NIN must be at most 12 characters long" }).min(12, { message: "NIN must be at least 12 characters long" }).regex(/^[0-9]+$/, { message: "NIN must be a number" }),
+    estateId: z.string({ required_error: "Estate is required" }),
+    estateName: z.string().optional(),
+    houseNumber: z.string({ required_error: "House number is required" }),
+
+}).superRefine((data, ctx) => {
+    if (data.estateId === "OTHER" && !data.estateName) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Estate name is required when 'Other' is selected",
+            path: ["EstateName"],
+        });
+    }
+});
+export type UpdateProfileOnboardingInput = z.infer<typeof updateProfileOnboardingSchema>;
+
 export default class AuthValidator {
-   
+
     static signup(data: unknown) {
         return signupSchema.safeParse(data);
     }
@@ -56,6 +77,10 @@ export default class AuthValidator {
     }
     static verifyOTP(data: unknown) {
         return verifyOTPSchema.safeParse(data);
+    }
+
+    static updateProfileOnboarding(data: unknown) {
+        return updateProfileOnboardingSchema.safeParse(data);
     }
 
 }

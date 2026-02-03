@@ -5,14 +5,14 @@ import logger from "../config/logger";
 import AppError from "../utils/appError";
 import ResponseHelper from "../utils/helpers/response.helper";
 import { OTP_TYPES, OtpType } from "../utils/constants/otp";
-import { UserRepo } from "../repository/user";
+import { UserRepository } from "../repository/user";
 import AuthHelper from "../utils/helpers/auth.helper";
-
-
 
 export default class OTPService {
   private static readonly OTP_LENGTH = 6;
-  private static readonly OTP_TTL = 600; // 10 minutes
+  private static readonly OTP_TTL = 600; 
+
+  static userRepository = new UserRepository();
 
   /**
    * Generates a 6-digit OTP, stores it in Redis, and sends it via email.
@@ -59,7 +59,7 @@ export default class OTPService {
 
 
     if (type === OTP_TYPES.SIGNUP_VERIFICATION) {
-      const user = await UserRepo.findByEmail(email);
+      const user = await this.userRepository.findByEmail(email);
       if (!user) {
         throw new AppError("User not found", ResponseHelper.RESOURCE_NOT_FOUND);
       }
@@ -68,7 +68,7 @@ export default class OTPService {
         throw new AppError("User already verified", ResponseHelper.BAD_REQUEST);
       }
 
-      await UserRepo.update(user.id, {
+      await this.userRepository.update(user.id, {
         isActive: true,
         emailVerified: true,
         emailVerifiedAt: new Date(),
@@ -91,7 +91,7 @@ export default class OTPService {
     }
 
     if (type === OTP_TYPES.LOGIN_DEVICE_VERIFICATION) {
-      const user = await UserRepo.findByEmail(email);
+      const user = await this.userRepository.findByEmail(email);
       if (!user) {
         throw new AppError("User not found", ResponseHelper.RESOURCE_NOT_FOUND);
       }

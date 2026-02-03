@@ -1,5 +1,5 @@
 import AuthHelper from "../utils/helpers/auth.helper";
-import { UserRepo } from "../repository/user";
+import { UserRepository } from "../repository/user";
 import AppError from "../utils/appError";
 import ResponseHelper from "../utils/helpers/response.helper";
 import OTPService from "./otp.service";
@@ -9,18 +9,21 @@ import { OTP_TYPES, OtpType } from "../utils/constants/otp";
 import envConfig from "../config/env";
 
 export default class AuthService {
+
+  private userRepository = new UserRepository();
+
   /**
    * Signup process: Create inactive user and send OTP.
    */
-  static async signup(data: { email: string; password: string }): Promise<void> {
-    const existingUser = await UserRepo.findByEmail(data.email);
+   async signup(data: { email: string; password: string }): Promise<void> {
+    const existingUser = await this.userRepository.findByEmail(data.email);
     if (existingUser) {
       throw new AppError("Email already in use", ResponseHelper.BAD_REQUEST);
     }
 
     const passwordHash = await AuthHelper.passwordToHash(data.password);
 
-    await UserRepo.create({
+    await this.userRepository.create({
       email: data.email,
       passwordHash,
       isActive: false,
@@ -33,8 +36,8 @@ export default class AuthService {
   /**
    * Signin process: Validate password and send OTP.
    */
-  static async signin(data: { email: string; password: string }): Promise<void> {
-    const user = await UserRepo.findByEmail(data.email);
+   async signin(data: { email: string; password: string }): Promise<void> {
+    const user = await this.userRepository.findByEmail(data.email);
     if (!user || !user.passwordHash) {
       throw new AppError("Invalid email or password", ResponseHelper.UNAUTHORIZED);
     }
@@ -60,16 +63,16 @@ export default class AuthService {
   /**
    * Verify OTP and complete authentication.
    */
-  static async verifyOTPAndAuth(email: string, type: OtpType, otp: string): Promise<{ user: User; token: string }> {
+   async verifyOTPAndAuth(email: string, type: OtpType, otp: string): Promise<{ user: User; token: string }> {
     await OTPService.verifyOTP(email, type, otp);
 
-    const user = await UserRepo.findByEmail(email);
+    const user = await this.userRepository.findByEmail(email);
     if (!user) {
       throw new AppError("User not found", ResponseHelper.RESOURCE_NOT_FOUND);
     }
 
     if (type === OTP_TYPES.SIGNUP_VERIFICATION) {
-      await UserRepo.update(user.id, {
+      await this.userRepository.update(user.id, {
         isActive: true,
         emailVerified: true,
         emailVerifiedAt: new Date(),
@@ -88,7 +91,7 @@ export default class AuthService {
 
     const token = AuthHelper.createAuthToken(user.id);
 
-    const updatedUser = (await UserRepo.findById(user.id))!;
+    const updatedUser = (await this.userRepository.findById(user.id))!;
 
     return {
       user: updatedUser,

@@ -1,8 +1,10 @@
 import express from "express";
 import { Routes } from "../types/app.types";
 import AuthRouter from "./auth.routes";
+import EstateRouter from "./estate.routes";
 import MeterRouter from "./meter.routes";
 import OTPRouter from "./otp.routes";
+import UserRouter from "./user.routes";
 
 const AppRouter = express.Router();
 
@@ -12,12 +14,20 @@ const appRoutes: Routes = [
         router: AuthRouter,
     },
     {
-        path:"/meter",
+        path: "/estate",
+        router: EstateRouter
+    },
+    {
+        path: "/meter",
         router: MeterRouter
     },
     {
-        path:"/otp",
+        path: "/otp",
         router: OTPRouter
+    },
+    {
+        path: "/user",
+        router: UserRouter
     }
 ];
 

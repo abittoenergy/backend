@@ -17,6 +17,7 @@
         "db:generate": "drizzle-kit generate",
         "lint:format": "prettier --write \"{src,tests}/**/*.{ts,js,json,md}\"",
         "db:migrate": "tsx src/db/migrate.ts",
+        "db:seed": "tsx src/db/seeds/index.ts",
         "db:migrate:prod": "node dist/db/migrate.js",
         "ci": "pnpm run build"
     },

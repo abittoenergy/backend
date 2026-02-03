@@ -7,6 +7,9 @@ import AuthService from "../services/auth.service";
 
 
 export default class AuthController {
+
+    private static authService = new AuthService();
+
     static signup = ControllerHelper.createHandler("signup", async (req, res, next) => {
         try {
             const parsed = AuthValidator.signup(req.body);
@@ -19,7 +22,7 @@ export default class AuthController {
                 return next(new AppError(message, ResponseHelper.BAD_REQUEST));
             }
 
-            void await AuthService.signup(parsed.data);
+            void await AuthController.authService.signup(parsed.data);
 
             ResponseHelper.sendSuccessResponse(res, {
                 message: "OTP sent to your email for verification",
@@ -44,7 +47,7 @@ export default class AuthController {
                 return next(new AppError(message, ResponseHelper.BAD_REQUEST));
             }
 
-            await AuthService.signin(parsed.data);
+            await AuthController.authService.signin(parsed.data);
 
             ResponseHelper.sendSuccessResponse(res, {
                 message: "OTP sent to your email for verification",

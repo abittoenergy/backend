@@ -22,6 +22,27 @@
       "when": 1769429497746,
       "tag": "0002_open_ink",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1770108730737,
+      "tag": "0003_happy_maggott",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1770109800891,
+      "tag": "0004_glossy_iron_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1770149900833,
+      "tag": "0005_past_dreadnoughts",
+      "breakpoints": true
     }
   ]
 }

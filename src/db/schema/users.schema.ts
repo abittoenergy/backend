@@ -13,7 +13,8 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { adminRoles } from "./admin/role.schema";
-import { adminGroups } from "./admin/group.schema";
+import { adminGroups } from "./admin/groups.schema";
+import { estate } from "./estate.schema";
 
 export enum Role {
     BASIC_USER = "basic-user",
@@ -32,6 +33,7 @@ export const users = pgTable(
         passwordHash: varchar("password_hash", { length: 255 }),
         firstName: varchar("first_name", { length: 100 }),
         lastName: varchar("last_name", { length: 100 }),
+        username: varchar("username", { length: 100 }),
         phoneNumber: varchar("phone_number", { length: 20 }),
         avatar: varchar("avatar", { length: 255 }),
         country: varchar("country", { length: 2 }),
@@ -45,7 +47,7 @@ export const users = pgTable(
         lockoutUntil: timestamp("lockout_until"),
         createdAt: timestamp("created_at").defaultNow().notNull(),
         updatedAt: timestamp("updated_at").defaultNow().notNull(),
-      
+
         deleteRequestedAt: timestamp("delete_requested_at"),
         deleteEffectiveAt: timestamp("delete_effective_at"),
         isArchived: boolean("is_archived").notNull().default(false),
@@ -59,7 +61,11 @@ export const users = pgTable(
         telegramLinkedAt: timestamp("telegram_linked_at", { withTimezone: true }),
         adminRoleId: uuid("admin_role_id").references(() => adminRoles.id, { onDelete: "set null" }),
         adminGroupId: uuid("admin_group_id").references(() => adminGroups.id, { onDelete: "set null" }),
-        
+        gender: text("gender", { enum: ["male", "female", "other"] }),
+        nin: varchar("nin", { length: 12 }),
+        estateId: uuid("estate_id").references((): AnyPgColumn => estate.id, { onDelete: "set null" }),
+        houseNumber: varchar("house_number", { length: 20 }),
+        onboardingEstateName: text("onboarding_estate_name"),
     },
     (t) => [
         uniqueIndex("users_email_lower_unique").on(sql`lower(${t.email})`),
