@@ -79,6 +79,9 @@ const envConfig = {
         adminUsername: process.env.ADMIN_USERNAME || "admin",
         adminFirstName: process.env.ADMIN_FIRST_NAME || "Admin",
         adminLastName: process.env.ADMIN_LAST_NAME || "Admin",
+    },
+    app:{
+        url: process.env.APP_URL || "http://localhost:5012",
     }
 };
 

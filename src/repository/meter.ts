@@ -41,10 +41,18 @@ export const MeterRepo = {
     return result;
   },
 
-  async linkUser(deviceId: string, userId: string, meterNumber?: string): Promise<Meter | undefined> {
+  async linkUser(deviceId: string, userId: string, propertyData?: { estateId?: string, houseNumber?: string, estateName?: string }, meterNumber?: string): Promise<Meter | undefined> {
     const [result] = await db
       .update(meters)
-      .set({ userId, meterNumber, status: MeterStatus.REGISTERED, updatedAt: new Date() })
+      .set({
+        userId,
+        meterNumber,
+        status: MeterStatus.REGISTERED,
+        estateId: propertyData?.estateId,
+        houseNumber: propertyData?.houseNumber,
+        estateName: propertyData?.estateName,
+        updatedAt: new Date()
+      })
       .where(eq(meters.deviceId, deviceId))
       .returning();
     return result;

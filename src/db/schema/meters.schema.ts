@@ -9,6 +9,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { users } from "./users.schema";
+import { estate } from "./estate.schema";
 
 export enum MeterStatus {
   ACTIVE = "active",
@@ -28,6 +29,9 @@ export const meters = pgTable(
     userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
     valveStatus: boolean("valve_status").notNull().default(false),
     meterNumber: varchar("meter_number", { length: 50 }).unique(),
+    estateId: uuid("estate_id").references(() => estate.id, { onDelete: "set null" }),
+    houseNumber: varchar("house_number", { length: 20 }),
+    estateName: text("estate_name"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

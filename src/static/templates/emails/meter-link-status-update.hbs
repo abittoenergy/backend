@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .container {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 40px;
+            background-color: #ffffff;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h2 {
+            color: #3266CC;
+            margin: 0;
+        }
+        .content {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #333333;
+        }
+        .status-box {
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .approved {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+        .rejected {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+        .footer {
+            margin-top: 40px;
+            font-size: 12px;
+            color: #999999;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Meter Link Update</h2>
+        </div>
+        <div class="content">
+            <p>Hello {{firstName}},</p>
+            <p>Your request to link meter <strong>{{meterNumber}}</strong> has been processed.</p>
+            
+            <div class="status-box {{statusLowercase}}">
+                Status: {{status}}
+            </div>
+            
+            {{#if isRejected}}
+            <p><strong>Reason for rejection:</strong> {{reason}}</p>
+            <p>If you believe this is an error, please contact our support team.</p>
+            {{else}}
+            <p>Success! Your meter is now linked to your account. You can now monitor your usage and make payments from your dashboard.</p>
+            {{/if}}
+
+            <p>Best regards,<br>The Abittoenergy Team</p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2026 Abittoenergy. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

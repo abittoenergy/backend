@@ -43,6 +43,13 @@
       "when": 1770149900833,
       "tag": "0005_past_dreadnoughts",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1770152936823,
+      "tag": "0006_pink_songbird",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .container {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 40px;
+            background-color: #ffffff;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h2 {
+            color: #3266CC;
+            margin: 0;
+        }
+        .content {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #333333;
+        }
+        .info-box {
+            background-color: #f4f7f6;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .footer {
+            margin-top: 40px;
+            font-size: 12px;
+            color: #999999;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Meter Link Request Received</h2>
+        </div>
+        <div class="content">
+            <p>Hello {{firstName}},</p>
+            <p>We've received your request to link meter <strong>{{meterNumber}}</strong> to your Abittoenergy account.</p>
+            <p>Our team is currently reviewing your request. We will notify you via email as soon as it has been processed.</p>
+            
+            <div class="info-box">
+                <p><strong>Installation Details:</strong></p>
+                <p>Estate: {{estateName}}</p>
+                <p>House Number: {{houseNumber}}</p>
+            </div>
+            
+            <p>If you have any questions in the meantime, please feel free to reach out to our support team.</p>
+            
+            <p>Best regards,<br>The Abittoenergy Team</p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2026 Abittoenergy. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
