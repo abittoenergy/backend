@@ -59,6 +59,12 @@ export default class MeterController {
   });
 
   static listMeterLinkRequests = ControllerHelper.createHandler("list-meter-link-requests", async (req, res, next) => {
+    const { id: userId } = (req as any).user;
+
+    if (!userId) {
+      return next(new AppError("User not found", ResponseHelper.FORBIDDEN));
+    }
+
     const { status } = req.query as any;
     const data = await MeterService.getMeterLinkRequests(status);
 
@@ -69,14 +75,21 @@ export default class MeterController {
   });
 
   static processMeterLinkRequest = ControllerHelper.createHandler("process-meter-link-request", async (req, res, next) => {
-    const { id } = req.params;
-    const { status, reason } = req.body;
-    const { id: adminId } = (req as any).user;
+    const { id: userId } = (req as any).user;
 
-    if (!status) {
-      return next(new AppError("status is required", ResponseHelper.BAD_REQUEST));
+    if (!userId) {
+      return next(new AppError("User not found", ResponseHelper.FORBIDDEN));
     }
 
+    const validation = MeterValidator.validateProcessMeterLinkRequest(req.body);
+    if (!validation.success) {
+      return next(new AppError(validation.error.errors[0].message, ResponseHelper.BAD_REQUEST));
+    }
+
+    const { status, reason } = validation.data;
+    const { id: adminId } = (req as any).user;
+
+    const { id } = req.params;
     const data = await MeterService.processMeterLinkRequest(id, adminId, status, reason);
 
     ResponseHelper.sendSuccessResponse(res, {

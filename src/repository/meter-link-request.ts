@@ -1,6 +1,13 @@
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, getTableColumns } from "drizzle-orm";
 import { getDb } from "../config/db";
 import { meterLinkRequests, MeterLinkRequest, NewMeterLinkRequest, LinkRequestStatus } from "../db/schema/meter-link-requests.schema";
+import { meters, users, Meter, User } from "../db/schema";
+
+export type MeterLinkRequestWithDetails = {
+  meter_link_requests: MeterLinkRequest;
+  meters: Meter;
+  users: Omit<User, "passwordHash">;
+};
 
 export class MeterLinkRequestRepo {
   private db = getDb();
@@ -29,8 +36,19 @@ export class MeterLinkRequestRepo {
     return result;
   }
 
-  async findAll(filters?: { status?: LinkRequestStatus }): Promise<MeterLinkRequest[]> {
-    let query = this.db.select().from(meterLinkRequests).orderBy(desc(meterLinkRequests.createdAt));
+  async findAll(filters?: { status?: LinkRequestStatus }): Promise<MeterLinkRequestWithDetails[]> {
+    const { passwordHash, ...userColumns } = getTableColumns(users);
+
+    let query = this.db
+      .select({
+        meter_link_requests: getTableColumns(meterLinkRequests),
+        meters: getTableColumns(meters),
+        users: userColumns,
+      })
+      .from(meterLinkRequests)
+      .innerJoin(meters, eq(meterLinkRequests.meterId, meters.id))
+      .innerJoin(users, eq(meterLinkRequests.userId, users.id))
+      .orderBy(desc(meterLinkRequests.createdAt));
 
     if (filters?.status) {
       query = query.where(eq(meterLinkRequests.status, filters.status)) as any;
