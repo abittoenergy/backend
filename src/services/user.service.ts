@@ -36,6 +36,7 @@ export default class UserService {
       estateId: estateId,
       houseNumber: data.houseNumber,
       onboardingEstateName: onboardingEstateName,
+      onboardingCompleted: true,
       updatedAt: new Date(),
     });
   }

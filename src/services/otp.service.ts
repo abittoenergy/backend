@@ -100,6 +100,7 @@ export default class OTPService {
 
       return {
         token,
+        onboardingCompleted: user.onboardingCompleted,
       };
     }
 

@@ -66,6 +66,7 @@ export const users = pgTable(
         estateId: uuid("estate_id").references((): AnyPgColumn => estate.id, { onDelete: "set null" }),
         houseNumber: varchar("house_number", { length: 20 }),
         onboardingEstateName: text("onboarding_estate_name"),
+        onboardingCompleted: boolean("onboarding_completed").notNull().default(false),
     },
     (t) => [
         uniqueIndex("users_email_lower_unique").on(sql`lower(${t.email})`),
