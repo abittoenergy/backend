@@ -15,7 +15,7 @@ export default class AuthService {
   /**
    * Signup process: Create inactive user and send OTP.
    */
-   async signup(data: { email: string; password: string }): Promise<void> {
+  async signup(data: { email: string; password: string }): Promise<void> {
     const existingUser = await this.userRepository.findByEmail(data.email);
     if (existingUser) {
       throw new AppError("Email already in use", ResponseHelper.BAD_REQUEST);
@@ -36,7 +36,7 @@ export default class AuthService {
   /**
    * Signin process: Validate password and send OTP.
    */
-   async signin(data: { email: string; password: string }): Promise<void> {
+  async signin(data: { email: string; password: string }): Promise<string> {
     const user = await this.userRepository.findByEmail(data.email);
     if (!user || !user.passwordHash) {
       throw new AppError("Invalid email or password", ResponseHelper.UNAUTHORIZED);
@@ -48,22 +48,21 @@ export default class AuthService {
     }
 
     if (!user.emailVerified) {
-      await OTPService.sendOTP(data.email, OTP_TYPES.SIGNUP_VERIFICATION);
-      throw new AppError("Email is not verified, please verify your email", ResponseHelper.UNAUTHORIZED);
+      return await OTPService.sendOTP(data.email, OTP_TYPES.SIGNUP_VERIFICATION);
     }
 
-     // check if account is active
-     if (!user.isActive) {
-       throw new AppError("Account is not active, contact admin.", ResponseHelper.UNAUTHORIZED);
-     }
+    // check if account is active
+    if (!user.isActive) {
+      throw new AppError("Account is not active, contact admin.", ResponseHelper.UNAUTHORIZED);
+    }
 
-    await OTPService.sendOTP(data.email, OTP_TYPES.LOGIN_DEVICE_VERIFICATION);
+    return await OTPService.sendOTP(data.email, OTP_TYPES.LOGIN_DEVICE_VERIFICATION);
   }
 
   /**
    * Verify OTP and complete authentication.
    */
-   async verifyOTPAndAuth(email: string, type: OtpType, otp: string): Promise<{ user: User; token: string }> {
+  async verifyOTPAndAuth(email: string, type: OtpType, otp: string): Promise<{ user: User; token: string }> {
     await OTPService.verifyOTP(email, type, otp);
 
     const user = await this.userRepository.findByEmail(email);

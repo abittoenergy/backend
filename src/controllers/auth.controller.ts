@@ -22,10 +22,13 @@ export default class AuthController {
                 return next(new AppError(message, ResponseHelper.BAD_REQUEST));
             }
 
-            void await AuthController.authService.signup(parsed.data);
+            const otp = await AuthController.authService.signup(parsed.data);
 
             ResponseHelper.sendSuccessResponse(res, {
                 message: "OTP sent to your email for verification",
+                data: {
+                    otp: process.env.NODE_ENV !== "production" ? otp : undefined,
+                }
             });
         } catch (error) {
             logger.error(`${req.headers.reqName} request failed [${req.headers.reqId}]`, {
@@ -47,10 +50,13 @@ export default class AuthController {
                 return next(new AppError(message, ResponseHelper.BAD_REQUEST));
             }
 
-            await AuthController.authService.signin(parsed.data);
+            const otp = await AuthController.authService.signin(parsed.data);
 
             ResponseHelper.sendSuccessResponse(res, {
                 message: "OTP sent to your email for verification",
+                data: {
+                    otp: process.env.NODE_ENV !== "production" ? otp : undefined,
+                }
             });
         } catch (error) {
             logger.error(`${req.headers.reqName} request failed [${req.headers.reqId}]`, {

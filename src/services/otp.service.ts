@@ -10,14 +10,14 @@ import AuthHelper from "../utils/helpers/auth.helper";
 
 export default class OTPService {
   private static readonly OTP_LENGTH = 6;
-  private static readonly OTP_TTL = 600; 
+  private static readonly OTP_TTL = 600;
 
   static userRepository = new UserRepository();
 
   /**
    * Generates a 6-digit OTP, stores it in Redis, and sends it via email.
    */
-  static async sendOTP(email: string, type: OtpType): Promise<void> {
+  static async sendOTP(email: string, type: OtpType): Promise<string> {
     const otp = otpGenerator.generate(this.OTP_LENGTH, {
       upperCaseAlphabets: false,
       specialChars: false,
@@ -38,6 +38,8 @@ export default class OTPService {
         expiryMinutes: this.OTP_TTL / 60,
       },
     });
+
+    return otp;
   }
 
   /**
@@ -64,7 +66,7 @@ export default class OTPService {
         throw new AppError("User not found", ResponseHelper.RESOURCE_NOT_FOUND);
       }
 
-      if(user.emailVerified){
+      if (user.emailVerified) {
         throw new AppError("User already verified", ResponseHelper.BAD_REQUEST);
       }
 

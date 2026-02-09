@@ -8,7 +8,7 @@ import OtpValidator from "../validators/otp.validator";
 import { OtpType } from "../utils/constants/otp";
 
 export default class OtpController {
-  static otpService =  OtpService;
+  static otpService = OtpService;
 
   static generateOtp = ControllerHelper.createHandler("otp.generate", async (req, res, next) => {
     const parsed = OtpValidator.generate(req.body);
@@ -21,13 +21,14 @@ export default class OtpController {
       return next(new AppError(message, ResponseHelper.BAD_REQUEST));
     }
 
-    const {  type, email, } = parsed.data;
-    await this.otpService.sendOTP(email, type as OtpType);
+    const { type, email, } = parsed.data;
+    const otp = await this.otpService.sendOTP(email, type as OtpType);
 
     ResponseHelper.sendSuccessResponse(res, {
       message: "OTP sent successfully",
       data: {
         type,
+        otp: process.env.NODE_ENV !== "production" ? otp : undefined,
       },
     });
   });
@@ -43,7 +44,7 @@ export default class OtpController {
       return next(new AppError(message, ResponseHelper.BAD_REQUEST));
     }
 
-    const {  type, otp, email } = parsed.data;
+    const { type, otp, email } = parsed.data;
     const response = await this.otpService.verifyOTP(email, type as OtpType, otp);
 
     ResponseHelper.sendSuccessResponse(res, {
