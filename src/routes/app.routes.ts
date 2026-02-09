@@ -5,6 +5,8 @@ import EstateRouter from "./estate.routes";
 import MeterRouter from "./meter.routes";
 import OTPRouter from "./otp.routes";
 import UserRouter from "./user.routes";
+import WalletRouter from "./wallet.routes";
+import WebhookRouter from "./webhook.routes";
 
 const AppRouter = express.Router();
 
@@ -28,6 +30,14 @@ const appRoutes: Routes = [
     {
         path: "/user",
         router: UserRouter
+    },
+    {
+        path: "/wallet",
+        router: WalletRouter
+    },
+    {
+        path: "/webhooks",
+        router: WebhookRouter
     }
 ];
 

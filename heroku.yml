@@ -1,0 +1,15 @@
+build:
+  docker:
+    web: Dockerfile
+setup:
+  addons:
+    - plan: heroku-postgresql:essential-0
+      as: DATABASE
+    - plan: heroku-redis:mini
+      as: REDIS
+release:
+  command:
+    - pnpm run db:migrate:prod
+  image: web
+run:
+  web: pnpm run start

@@ -73,16 +73,21 @@ const envConfig = {
         pass: process.env.SMTP_PASS,
         from: process.env.SMTP_FROM || "Abittoenergy <no-reply@abittoenergy.com>",
     },
-    admin:{
+    admin: {
         adminEmail: process.env.ADMIN_EMAIL || "admin@abittoenergy.com",
         adminPassword: process.env.ADMIN_PASSWORD,
         adminUsername: process.env.ADMIN_USERNAME || "admin",
         adminFirstName: process.env.ADMIN_FIRST_NAME || "Admin",
         adminLastName: process.env.ADMIN_LAST_NAME || "Admin",
     },
-    app:{
+    app: {
         url: process.env.APP_URL || "http://localhost:5012",
+    },
+    paystack: {
+        secretKey: process.env.PAYSTACK_SECRET_KEY,
+        publicKey: process.env.PAYSTACK_PUBLIC_KEY,
     }
+    
 };
 
 export default envConfig;
