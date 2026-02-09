@@ -57,6 +57,13 @@
       "when": 1770643381142,
       "tag": "0007_nappy_photon",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1770648544184,
+      "tag": "0008_fair_salo",
+      "breakpoints": true
     }
   ]
 }

@@ -40,4 +40,14 @@ export default class UserService {
       updatedAt: new Date(),
     });
   }
+
+  static async getProfile(userId: string) {
+    const user = await this.userRepository.findById(userId);
+    if (!user) {
+      throw new AppError("User not found", ResponseHelper.RESOURCE_NOT_FOUND);
+    }
+
+    const { passwordHash, ...safeUser } = user;
+    return safeUser;
+  }
 }

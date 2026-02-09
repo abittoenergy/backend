@@ -11,7 +11,7 @@ export default class UserController {
   static updateProfileOnboarding = ControllerHelper.createHandler("user.update-profile-onboarding", async (req, res, next) => {
     const { id: userId } = (req as any).user;
 
-    if(!userId){
+    if (!userId) {
       return next(new AppError("User not found", ResponseHelper.RESOURCE_NOT_FOUND));
     }
     const parsed = AuthValidator.updateProfileOnboarding(req.body);
@@ -30,6 +30,23 @@ export default class UserController {
       message: "Profile updated successfully",
       data: {
         user: result
+      },
+    });
+  });
+
+  static getProfile = ControllerHelper.createHandler("user.get-profile", async (req, res, next) => {
+    const { id: userId } = (req as any).user;
+
+    if (!userId) {
+      return next(new AppError("User not found", ResponseHelper.RESOURCE_NOT_FOUND));
+    }
+
+    const user = await UserService.getProfile(userId);
+
+    ResponseHelper.sendSuccessResponse(res, {
+      message: "Profile retrieved successfully",
+      data: {
+        user,
       },
     });
   });

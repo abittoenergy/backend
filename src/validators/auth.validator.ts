@@ -50,7 +50,7 @@ export const updateProfileOnboardingSchema = z.object({
     lastName: z.string({ required_error: "Last name is required" }),
     phoneNumber: z.string({ required_error: "Phone number is required" }),
     gender: z.enum(["male", "female", "other"], { required_error: "Gender is required" }),
-    nin: z.string({ required_error: "NIN is required" }).max(12, { message: "NIN must be at most 12 characters long" }).min(12, { message: "NIN must be at least 12 characters long" }).regex(/^[0-9]+$/, { message: "NIN must be a number" }),
+    nin: z.string({ required_error: "NIN is required" }).length(11, { message: "NIN must be 11 characters long" }).regex(/^[0-9]+$/, { message: "NIN must be a number" }),
     estateId: z.string({ required_error: "Estate is required" }),
     estateName: z.string().optional(),
     houseNumber: z.string({ required_error: "House number is required" }),

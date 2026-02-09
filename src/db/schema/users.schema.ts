@@ -62,7 +62,7 @@ export const users = pgTable(
         adminRoleId: uuid("admin_role_id").references(() => adminRoles.id, { onDelete: "set null" }),
         adminGroupId: uuid("admin_group_id").references(() => adminGroups.id, { onDelete: "set null" }),
         gender: text("gender", { enum: ["male", "female", "other"] }),
-        nin: varchar("nin", { length: 12 }),
+        nin: varchar("nin", { length: 11 }),
         estateId: uuid("estate_id").references((): AnyPgColumn => estate.id, { onDelete: "set null" }),
         houseNumber: varchar("house_number", { length: 20 }),
         onboardingEstateName: text("onboarding_estate_name"),
