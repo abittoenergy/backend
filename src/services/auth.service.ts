@@ -47,15 +47,15 @@ export default class AuthService {
       throw new AppError("Invalid email or password", ResponseHelper.UNAUTHORIZED);
     }
 
-    // check if account is active
-    if (!user.isActive) {
-      throw new AppError("Account is not active", ResponseHelper.UNAUTHORIZED);
-    }
-
     if (!user.emailVerified) {
       await OTPService.sendOTP(data.email, OTP_TYPES.SIGNUP_VERIFICATION);
       throw new AppError("Email is not verified, please verify your email", ResponseHelper.UNAUTHORIZED);
     }
+
+     // check if account is active
+     if (!user.isActive) {
+       throw new AppError("Account is not active, contact admin.", ResponseHelper.UNAUTHORIZED);
+     }
 
     await OTPService.sendOTP(data.email, OTP_TYPES.LOGIN_DEVICE_VERIFICATION);
   }
