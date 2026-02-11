@@ -73,7 +73,7 @@ export default class WebhookController {
         return;
       }
 
-      // This is a regular card payment - process normally
+      // This is a regular card payment - check transaction type
       const transaction = await this.transactionRepo.findByReference(reference);
 
       if (!transaction) {
@@ -86,6 +86,14 @@ export default class WebhookController {
         return res.status(200).send("Already processed");
       }
 
+      // Check if this is a gas purchase
+      if (transaction.type === "GAS_PURCHASE_ONLINE") {
+        await this.handleGasPurchasePayment(transaction, data);
+        logger.info(`Gas purchase payment successful for reference: ${reference}`);
+        return;
+      }
+
+      // Regular wallet topup
       await WalletService.processSuccessfulTopup(transaction, data);
       logger.info(`Paystack card top-up successful for reference: ${reference}`);
       return;
@@ -192,6 +200,28 @@ export default class WebhookController {
         error: error.message,
         stack: error.stack,
         reference: data.reference,
+      });
+    }
+  }
+
+  /**
+   * Handle successful gas purchase payment
+   * Triggers MQTT dispense command
+   */
+  private static async handleGasPurchasePayment(transaction: any, data: any) {
+    try {
+      const GasPurchaseService = (await import("../services/gas-purchase.service")).default;
+      await GasPurchaseService.processSuccessfulPurchase(transaction.id, data);
+
+      logger.info(`Gas purchase payment processed successfully`, {
+        transactionId: transaction.id,
+        reference: data.reference,
+      });
+    } catch (error: any) {
+      logger.error("Failed to process gas purchase payment", {
+        error: error.message,
+        stack: error.stack,
+        transactionId: transaction.id,
       });
     }
   }

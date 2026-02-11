@@ -50,12 +50,17 @@ export default class EmailService {
     try {
       this.initialize();
 
+      const logoUrl = `${envConfig.baseUrl}/static/asset/images/logo.png`;
+
       const mailOptions = {
         from: envConfig.email.from,
         to: options.to,
         subject: options.subject,
         template: options.template,
-        context: options.context,
+        context: {
+          ...options.context,
+          logoUrl,
+        },
         attachments: options.attachments,
       };
 

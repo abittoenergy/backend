@@ -31,9 +31,6 @@ export default class DVAController {
       return next(new AppError("User not found", ResponseHelper.RESOURCE_NOT_FOUND));
     }
 
-    // Rate limiting check - allow requery once every 10 minutes
-    // This is handled by the rate limiter middleware in routes
-
     const result = await DedicatedVirtualAccountService.requeryUserDVA(userId);
 
     ResponseHelper.sendSuccessResponse(res, {

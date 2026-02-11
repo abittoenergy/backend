@@ -31,6 +31,7 @@ import "./queues/dva-generation.queue";
 
 import { connectMqtt } from "./config/mqtt";
 import EmailService from "./services/email.service";
+import { initializeGasPurchaseMqttListener } from "./listeners/gas-purchase-mqtt.listener";
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -63,6 +64,9 @@ app.use(cors());
 app.use(helmet());
 app.use(expressFileUpload({ createParentPath: true, useTempFiles: true }));
 
+// Serve static assets (logo, images, etc.)
+app.use("/static", express.static("static"));
+
 app.use((req: ReqWithMeta, res: ExpressResponse, next: NextFunction) => {
     const reqId = DataHelpers.generateReqId();
 
@@ -81,8 +85,8 @@ app.use((req: ReqWithMeta, res: ExpressResponse, next: NextFunction) => {
 
 (async () => {
     try {
-        await getRedisClient();
-        
+       
+
         logger.info("Services initialized successfully");
     } catch (e) {
         logger.error("Failed to initialize services", e);
@@ -110,5 +114,8 @@ const port = process.env.PORT || 8000;
 app.listen(port, () => {
     logger.info(`Abittoenergy API running on port: ${port}`);
     connectMqtt();
+    initializeGasPurchaseMqttListener();
+    getRedisClient();
+  
     EmailService.verifyConnection();
 });

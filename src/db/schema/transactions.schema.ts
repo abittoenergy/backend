@@ -2,14 +2,14 @@ import { pgTable, uuid, timestamp, bigint, varchar, text, jsonb, pgEnum } from "
 import { users } from "./users.schema";
 import { wallets } from "./wallets.schema";
 
-export const transactionTypeEnum = pgEnum("transaction_type", ["WALLET_TOPUP", "WALLET_DEBIT", "GAS_PURCHASE"]);
+export const transactionTypeEnum = pgEnum("transaction_type", ["WALLET_TOPUP", "WALLET_DEBIT","GAS_PURCHASE_ONLINE"]);
 export const transactionStatusEnum = pgEnum("transaction_status", ["PENDING", "SUCCESS", "FAILED"]);
 export const paymentProviderEnum = pgEnum("payment_provider", ["PAYSTACK"]);
 
 export const transactions = pgTable("transactions", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  walletId: uuid("wallet_id").notNull().references(() => wallets.id, { onDelete: "cascade" }),
+  walletId: uuid("wallet_id").references(() => wallets.id, { onDelete: "cascade" }),
   amount: bigint("amount", { mode: "number" }).notNull(),
   type: transactionTypeEnum("type").notNull(),
   status: transactionStatusEnum("status").notNull().default("PENDING"),

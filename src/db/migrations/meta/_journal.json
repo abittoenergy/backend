@@ -85,6 +85,13 @@
       "when": 1770803892655,
       "tag": "0011_adorable_trauma",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1770806320937,
+      "tag": "0012_typical_starbolt",
+      "breakpoints": true
     }
   ]
 }

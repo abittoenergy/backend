@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .container {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 40px;
+            background-color: #ffffff;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h2 {
+            color: #3266CC;
+            margin: 0;
+        }
+        .content {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #333333;
+        }
+        .success-badge {
+            background-color: #4CAF50;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-block;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .info-box {
+            background-color: #f4f7f6;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #666;
+        }
+        .info-value {
+            color: #333;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+        .highlight {
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-left: 4px solid #2196F3;
+            margin: 20px 0;
+        }
+        .account-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3266CC;
+            text-align: center;
+            padding: 15px;
+            background-color: #f0f4ff;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+        }
+        .footer {
+            margin-top: 40px;
+            font-size: 12px;
+            color: #999999;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <img src="{{logoUrl}}" alt="Abittoenergy Logo" style="max-width: 200px; height: auto;" />
+        </div>
+        <div class="header">
+            <h2>Your Dedicated Virtual Account is Ready! 🏦</h2>
+        </div>
+        <div class="content">
+            <p>Hello {{firstName}},</p>
+            
+            <div style="text-align: center;">
+                <span class="success-badge">✓ Account Created</span>
+            </div>
+            
+            <p>Great news! We've successfully created a dedicated virtual account for you. You can now top up your Abittoenergy wallet instantly by transferring money to this account.</p>
+            
+            <div class="highlight">
+                <p><strong>Your Dedicated Account Number:</strong></p>
+                <div class="account-number">{{accountNumber}}</div>
+                <p style="text-align: center; margin: 0;"><strong>Bank: {{bankName}}</strong></p>
+            </div>
+
+            <div class="info-box">
+                <p><strong>Account Details:</strong></p>
+                <div class="info-row">
+                    <span class="info-label">Account Name:</span>
+                    <span class="info-value">{{accountName}}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Account Number:</span>
+                    <span class="info-value">{{accountNumber}}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Bank:</span>
+                    <span class="info-value">{{bankName}}</span>
+                </div>
+                {{#if customerEmail}}
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">{{customerEmail}}</span>
+                </div>
+                {{/if}}
+            </div>
+
+            <p><strong>How to use your virtual account:</strong></p>
+            <ol>
+                <li>Transfer any amount from your bank to the account number above</li>
+                <li>Your Abittoenergy wallet will be credited automatically within seconds</li>
+                <li>Use your wallet balance to purchase gas for your meter instantly</li>
+            </ol>
+
+            <div class="highlight">
+                <p><strong>Important Notes:</strong></p>
+                <ul style="margin: 10px 0;">
+                    <li>This account is exclusively for your Abittoenergy wallet top-ups</li>
+                    <li>Transfers are processed instantly 24/7</li>
+                    <li>There are no transaction fees for using this account</li>
+                    <li>Keep this account number safe and don't share it with anyone</li>
+                </ul>
+            </div>
+            
+            <p>You can view your wallet balance and transaction history anytime by logging into your dashboard.</p>
+            
+            <p>If you have any questions about your virtual account, please don't hesitate to contact our support team.</p>
+            
+            <p>Happy topping up!</p>
+            
+            <p>Best regards,<br>The Abittoenergy Team</p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2026 Abittoenergy. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

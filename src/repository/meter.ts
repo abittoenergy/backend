@@ -57,4 +57,9 @@ export const MeterRepo = {
       .returning();
     return result;
   },
+
+  async findByUserId(userId: string): Promise<Meter[]> {
+    const results = await db.select().from(meters).where(eq(meters.userId, userId));
+    return results;
+  },
 };

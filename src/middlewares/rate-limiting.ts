@@ -89,6 +89,16 @@ export function createRateLimiter(options: LimiterOptions) {
     }
   };
 }
+export const authLimiter = createRateLimiter({
+  keyPrefix: "rl:auth",
+  points: 100,
+  duration: 60 * 60
+});
+export const gasPurchaseLimiter = createRateLimiter({
+  keyPrefix: "rl:gas-purchase",
+  points: 100,
+  duration: 60 * 60
+});
 
 export const globalRateLimiter = createRateLimiter({
   keyPrefix: "rl:global",

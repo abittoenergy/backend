@@ -7,10 +7,9 @@ import { globalRateLimiter } from "../middlewares/rate-limiting";
 const DVARouter = express.Router();
 
 
-// Strict rate limiter for requery (once every 10 minutes)
 const requeryLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes
-  max: 1, // Only 1 request per 10 minutes
+  max: 1, 
   message: "You can only requery your dedicated virtual account once every 10 minutes"
 });
 

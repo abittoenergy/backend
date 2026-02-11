@@ -123,6 +123,14 @@ export class DedicatedVirtualAccountService {
       logger.info(`DVA assignment successful for customer ${customerCode}`, {
         accountNumber: data.account_number,
       });
+
+      // Send DVA creation email to user (non-blocking)
+      this.sendDVACreatedEmail(dva.userId, data).catch((error: any) => {
+        logger.error("Failed to send DVA created email", {
+          error: error.message,
+          userId: dva.userId,
+        });
+      });
     } catch (error: any) {
       logger.error("Failed to handle DVA assignment success", {
         error: error.message,
@@ -176,5 +184,47 @@ export class DedicatedVirtualAccountService {
       dva.accountNumber,
       dva.bankSlug
     );
+  }
+
+  /**
+   * Send DVA created email to user
+   * @private
+   */
+  private static async sendDVACreatedEmail(userId: string, dvaData: any): Promise<void> {
+    try {
+      // Get user details
+      const user = await this.userRepo.findById(userId);
+      if (!user || !user.email) {
+        logger.warn(`User or email not found for DVA email: ${userId}`);
+        return;
+      }
+
+      const EmailService = (await import("./email.service")).default;
+      await EmailService.sendEmail({
+        to: user.email,
+        subject: "Your Dedicated Virtual Account is Ready!",
+        template: "dva-created",
+        context: {
+          firstName: user.firstName || "Valued Customer",
+          accountNumber: dvaData.account_number,
+          accountName: dvaData.account_name,
+          bankName: dvaData.bank?.name || "Bank",
+          customerEmail: user.email,
+        },
+      });
+
+      logger.info(`DVA created email sent`, {
+        userId,
+        email: user.email,
+        accountNumber: dvaData.account_number,
+      });
+    } catch (error: any) {
+      logger.error("Error sending DVA created email", {
+        error: error.message,
+        stack: error.stack,
+        userId,
+      });
+      // Don't throw - email failure shouldn't break the DVA creation flow
+    }
   }
 }

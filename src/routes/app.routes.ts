@@ -9,6 +9,7 @@ import WalletRouter from "./wallet.routes";
 import WebhookRouter from "./webhook.routes";
 import SystemSettingsRouter from "./system-settings.routes";
 import DVARouter from "./dva.routes";
+import GasPurchaseRouter from "./gas-purchase.routes";
 
 const AppRouter = express.Router();
 
@@ -20,6 +21,10 @@ const appRoutes: Routes = [
     {
         path: "/dva",
         router: DVARouter
+    },
+    {
+        path: "/gas-purchase",
+        router: GasPurchaseRouter
     },
     {
         path: "/auth",

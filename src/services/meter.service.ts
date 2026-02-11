@@ -194,4 +194,13 @@ export default class MeterService {
 
     return updatedRequest;
   }
+
+  static async getUserMeters(userId: string) {
+    const meters = await MeterRepo.findByUserId(userId);
+
+    return {
+      meters,
+      count: meters.length,
+    };
+  }
 }

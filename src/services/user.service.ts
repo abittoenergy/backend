@@ -41,7 +41,6 @@ export default class UserService {
       updatedAt: new Date(),
     });
 
- 
     if (user.emailVerified) {
       await enqueueDVAGeneration(userId);
     }

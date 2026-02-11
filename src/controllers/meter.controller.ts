@@ -120,4 +120,19 @@ export default class MeterController {
     });
   });
 
+  static getUsersMeters = ControllerHelper.createHandler("get-users-meters", async (req, res, next) => {
+    const { id: userId } = (req as any).user;
+
+    if (!userId) {
+      return next(new AppError("User not found", ResponseHelper.FORBIDDEN));
+    }
+
+    const data = await MeterService.getUserMeters(userId);
+
+    ResponseHelper.sendSuccessResponse(res, {
+      message: "User meters retrieved successfully",
+      data,
+    });
+  });
+
 }
