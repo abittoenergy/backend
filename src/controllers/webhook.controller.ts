@@ -8,6 +8,8 @@ import logger from "../config/logger";
 import { DedicatedVirtualAccountRepository } from "../repository/dedicated-virtual-account.repo";
 import { DedicatedVirtualAccountService } from "../services/dedicated-virtual-account.service";
 import GasPurchaseService from "../services/gas-purchase.service";
+import EmailService from "../services/email.service";
+import { UserRepository } from "../repository/user";
 
 export default class WebhookController {
   private static transactionRepo = new TransactionRepository();
@@ -97,6 +99,16 @@ export default class WebhookController {
 
       // Regular wallet topup
       await WalletService.processSuccessfulTopup(transaction, data);
+
+      // Send success email (non-blocking)
+      this.sendWalletTopupEmail(transaction.userId, transaction, data).catch((error) => {
+        logger.error("Failed to send wallet top-up email", {
+          error: error.message,
+          userId: transaction.userId,
+          reference: transaction.reference,
+        });
+      });
+
       logger.info(`Paystack card top-up successful for reference: ${reference}`);
       return;
     }
@@ -116,6 +128,16 @@ export default class WebhookController {
       }
 
       await WalletService.processFailedTopup(transaction, data);
+
+      // Send failure email (non-blocking)
+      this.sendPaymentFailedEmail(transaction.userId, transaction, data).catch((error: any) => {
+        logger.error("Failed to send payment failed email", {
+          error: error.message,
+          userId: transaction.userId,
+          reference: transaction.reference,
+        });
+      });
+
       logger.warn(`Paystack top-up failed for reference: ${reference}`);
       return;
     }
@@ -188,6 +210,15 @@ export default class WebhookController {
       // Process the successful topup
       await WalletService.processSuccessfulTopup(transaction, data);
 
+      // Send success email (non-blocking)
+      this.sendWalletTopupEmail(dva.userId, transaction, data).catch((error) => {
+        logger.error("Failed to send DVA transfer email", {
+          error: error.message,
+          userId: dva.userId,
+          reference: data.reference,
+        });
+      });
+
       logger.info(`DVA transfer processed successfully`, {
         userId: dva.userId,
         amount: data.amount,
@@ -221,6 +252,111 @@ export default class WebhookController {
         error: error.message,
         stack: error.stack,
         transactionId: transaction.id,
+      });
+    }
+  }
+
+  /**
+   * Send wallet top-up success email
+   */
+  private static async sendWalletTopupEmail(userId: string, transaction: any, paystackData: any) {
+    try {
+      const userRepo = new UserRepository();
+      const user = await userRepo.findById(userId);
+
+      if (!user || !user.email) {
+        logger.warn(`User or email not found for wallet top-up email: ${userId}`);
+        return;
+      }
+
+      // Get wallet balance
+      const wallet = await WalletService.getOrCreateWallet(userId);
+      const newBalance = (Number(wallet.balance) / 100).toLocaleString("en-NG", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+
+      const amount = (Number(transaction.amount) / 100).toLocaleString("en-NG", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+
+      await EmailService.sendEmail({
+        to: user.email,
+        subject: "Wallet Funded - Your Balance is Ready",
+        template: "wallet-topup-success",
+        context: {
+          firstName: user.firstName || "Valued Customer",
+          amount,
+          newBalance,
+          reference: transaction.reference,
+          transactionDate: new Date(transaction.createdAt || Date.now()).toLocaleString("en-NG", {
+            dateStyle: "medium",
+            timeStyle: "short",
+          }),
+          dashboardUrl: `${envConfig.app.url}/wallet`,
+        },
+      });
+
+      logger.info(`Wallet top-up email sent`, {
+        userId,
+        email: user.email,
+        reference: transaction.reference,
+      });
+    } catch (error: any) {
+      logger.error("Error sending wallet top-up email", {
+        error: error.message,
+        stack: error.stack,
+        userId,
+      });
+    }
+  }
+
+  /**
+   * Send payment failed email
+   */
+  private static async sendPaymentFailedEmail(userId: string, transaction: any, paystackData: any) {
+    try {
+      const userRepo = new UserRepository();
+      const user = await userRepo.findById(userId);
+
+      if (!user || !user.email) {
+        logger.warn(`User or email not found for payment failed email: ${userId}`);
+        return;
+      }
+
+      const amount = (Number(transaction.amount) / 100).toLocaleString("en-NG", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+
+      await EmailService.sendEmail({
+        to: user.email,
+        subject: "Payment Could Not Be Completed",
+        template: "payment-failed",
+        context: {
+          firstName: user.firstName || "Valued Customer",
+          amount,
+          reference: transaction.reference,
+          reason: paystackData.gateway_response || "Payment declined",
+          transactionDate: new Date(transaction.createdAt || Date.now()).toLocaleString("en-NG", {
+            dateStyle: "medium",
+            timeStyle: "short",
+          }),
+          retryUrl: `${envConfig.app.url}/wallet/topup`,
+        },
+      });
+
+      logger.info(`Payment failed email sent`, {
+        userId,
+        email: user.email,
+        reference: transaction.reference,
+      });
+    } catch (error: any) {
+      logger.error("Error sending payment failed email", {
+        error: error.message,
+        stack: error.stack,
+        userId,
       });
     }
   }

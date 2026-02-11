@@ -55,10 +55,11 @@
         .info-value {
             color: #333;
         }
-        .highlight {
-            background-color: #fff3cd;
-            padding: 15px;
-            border-left: 4px solid #ffc107;
+        .amount {
+            font-size: 32px;
+            font-weight: bold;
+            color: #4CAF50;
+            text-align: center;
             margin: 20px 0;
         }
         .button-container {
@@ -88,72 +89,44 @@
             <img src="{{logoUrl}}" alt="Abittoenergy Logo" style="max-width: 200px; height: auto;" />
         </div>
         <div class="header">
-            <h2>Gas Purchase Successful! ⛽</h2>
+            <h2>Wallet Funded Successfully! 💰</h2>
         </div>
         <div class="content">
             <p>Hello {{firstName}},</p>
             
             <div style="text-align: center;">
-                <span class="success-badge">✓ Payment Confirmed</span>
+                <span class="success-badge">✓ Payment Received</span>
             </div>
             
-            <p>Your gas purchase has been successfully processed! Your meter valve will be opened automatically to dispense the gas you purchased.</p>
+            <p>Great news! Your wallet has been credited and is ready to use.</p>
+            
+            <div class="amount">₦{{amount}}</div>
             
             <div class="info-box">
-                <p><strong>Purchase Details:</strong></p>
+                <p><strong>Transaction Details:</strong></p>
                 <div class="info-row">
-                    <span class="info-label">Amount Paid:</span>
-                    <span class="info-value">₦{{amountPaid}}</span>
+                    <span class="info-label">Amount Credited:</span>
+                    <span class="info-value">₦{{amount}}</span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">Gas Quantity:</span>
-                    <span class="info-value">{{kgPurchased}} kg</span>
+                    <span class="info-label">New Balance:</span>
+                    <span class="info-value">₦{{newBalance}}</span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">Price per kg:</span>
-                    <span class="info-value">₦{{gasPricePerKg}}/kg</span>
-                </div>
-                <div class="info-row">
-                    <span class="info-label">Transaction Reference:</span>
+                    <span class="info-label">Reference:</span>
                     <span class="info-value">{{reference}}</span>
                 </div>
                 <div class="info-row">
                     <span class="info-label">Date:</span>
-                    <span class="info-value">{{purchaseDate}}</span>
+                    <span class="info-value">{{transactionDate}}</span>
                 </div>
             </div>
-
-            <div class="info-box">
-                <p><strong>Meter Information:</strong></p>
-                <div class="info-row">
-                    <span class="info-label">Meter Number:</span>
-                    <span class="info-value">{{meterNumber}}</span>
-                </div>
-                {{#if estateName}}
-                <div class="info-row">
-                    <span class="info-label">Location:</span>
-                    <span class="info-value">{{estateName}}{{#if houseNumber}}, House {{houseNumber}}{{/if}}</span>
-                </div>
-                {{/if}}
-            </div>
-
-             <div class="button-container">
-                <a href="{{dashboardUrl}}" class="button" style="color:#f4f7f6">Go to Dashboard</a>
-            </div>
-
-
-            <div class="highlight">
-                <p><strong>What happens next?</strong></p>
-                <p>Our system has sent a command to your meter to open the valve and dispense <strong>{{kgPurchased}} kg</strong> of gas. The dispensing process will begin shortly and you'll be able to monitor the status in your dashboard.</p>
-            </div>
             
-            <p>You can view your purchase history and track the dispensing status by logging into your dashboard.</p>
+            <p>Your funds are now available for gas purchases and other transactions on your account.</p>
             
-            <p>If you experience any issues with the gas dispensing, please contact our support team immediately with your transaction reference: <strong>{{reference}}</strong></p>
-            
-           
-            <p style="text-align: center; margin-top: 30px;">Want to make another purchase? <a href="{{buyGasUrl}}" class="button" style="background-color: #669900;color:#f4f7f6">Buy Gas</a></p>
-
+            <div class="button-container">
+                <a href="{{dashboardUrl}}" class="button">View Wallet</a>
+            </div>
             
             <p>Thank you for choosing Abittoenergy!</p>
             

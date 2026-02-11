@@ -101,8 +101,6 @@ class MqttService {
             ...command,
             timestamp: Date.now(),
         };
-        console.log(payload)
-
         client.publish(topic, JSON.stringify(payload), { qos: 1 }, (err) => {
             if (err) {
                 logger.error(`Failed to send command to ${deviceId}:`, err);
