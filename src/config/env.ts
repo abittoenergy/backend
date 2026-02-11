@@ -23,7 +23,7 @@ const DB_URL = process.env.DB_URL || process.env.DATABASE_URL;
 const parsed = DB_URL ? parseDbUrl(DB_URL) : null;
 
 const envConfig = {
-    baseUrl: process.env.BASE_URL || "http://localhost:5012",
+    baseUrl: process.env.BASE_URL || "http://localhost:5555",
 
     encryption: {
         key: process.env.ENCRYPTION_KEY || "db55ba87fed297ec4dbed7aaa9574d180e90e055cb41033429bdc323c01d59db",
@@ -82,6 +82,7 @@ const envConfig = {
     },
     app: {
         url: process.env.APP_URL || "http://localhost:5012",
+        adminUrl: process.env.ADMIN_URL || "http://localhost:5555",
     },
     paystack: {
         secretKey: process.env.PAYSTACK_SECRET_KEY,

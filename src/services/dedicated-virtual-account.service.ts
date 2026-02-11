@@ -1,6 +1,7 @@
 import { DedicatedVirtualAccountRepository } from "../repository/dedicated-virtual-account.repo";
 import { UserRepository } from "../repository/user";
 import PaystackService from "./paystack.service";
+import EmailService from "./email.service";
 import AppError from "../utils/appError";
 import ResponseHelper from "../utils/helpers/response.helper";
 import logger from "../config/logger";
@@ -199,7 +200,6 @@ export class DedicatedVirtualAccountService {
         return;
       }
 
-      const EmailService = (await import("./email.service")).default;
       await EmailService.sendEmail({
         to: user.email,
         subject: "Your Dedicated Virtual Account is Ready!",

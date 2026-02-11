@@ -6,6 +6,8 @@ import WalletService from "../services/wallet.service";
 import { TransactionRepository } from "../repository/transaction";
 import logger from "../config/logger";
 import { DedicatedVirtualAccountRepository } from "../repository/dedicated-virtual-account.repo";
+import { DedicatedVirtualAccountService } from "../services/dedicated-virtual-account.service";
+import GasPurchaseService from "../services/gas-purchase.service";
 
 export default class WebhookController {
   private static transactionRepo = new TransactionRepository();
@@ -125,12 +127,10 @@ export default class WebhookController {
   });
 
   private static async handleDVAAssignmentSuccess(data: any) {
-    const { DedicatedVirtualAccountService } = await import("../services/dedicated-virtual-account.service");
     await DedicatedVirtualAccountService.handleDVAAssignmentSuccess(data);
   }
 
   private static async handleDVAAssignmentFailed(data: any) {
-    const { DedicatedVirtualAccountService } = await import("../services/dedicated-virtual-account.service");
     await DedicatedVirtualAccountService.handleDVAAssignmentFailed(data);
   }
 
@@ -210,7 +210,6 @@ export default class WebhookController {
    */
   private static async handleGasPurchasePayment(transaction: any, data: any) {
     try {
-      const GasPurchaseService = (await import("../services/gas-purchase.service")).default;
       await GasPurchaseService.processSuccessfulPurchase(transaction.id, data);
 
       logger.info(`Gas purchase payment processed successfully`, {

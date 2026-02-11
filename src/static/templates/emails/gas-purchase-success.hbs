@@ -61,6 +61,19 @@
             border-left: 4px solid #ffc107;
             margin: 20px 0;
         }
+        .button-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .button {
+            background-color: #3266CC;
+            color: #ffffff;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            display: inline-block;
+        }
         .footer {
             margin-top: 40px;
             font-size: 12px;
@@ -132,6 +145,16 @@
             <p>You can view your purchase history and track the dispensing status by logging into your dashboard.</p>
             
             <p>If you experience any issues with the gas dispensing, please contact our support team immediately with your transaction reference: <strong>{{reference}}</strong></p>
+            
+            <div class="button-container">
+                <a href="{{dashboardUrl}}" class="button">Go to Dashboard</a>
+            </div>
+
+            <p style="text-align: center; margin-top: 30px;">To make another purchase, click on "Buy Gas"</p>
+
+            <div class="button-container">
+                <a href="{{buyGasUrl}}" class="button" style="background-color: #669900;">Buy Gas</a>
+            </div>
             
             <p>Thank you for choosing Abittoenergy!</p>
             

@@ -8,6 +8,9 @@ import ResponseHelper from "../utils/helpers/response.helper";
 import logger from "../config/logger";
 import { GasPurchaseStatus } from "../db/schema/gas-purchases.schema";
 import { SystemSettingsRepository } from "../repository/system-settings.repo";
+import EmailService from "./email.service";
+import envConfig from "../config/env";
+import { UserRepository } from "../repository/user";
 
 export default class GasPurchaseService {
   private static gasPurchaseRepo = new GasPurchaseRepository();
@@ -63,7 +66,6 @@ export default class GasPurchaseService {
     const kgPurchased = amount / gasPricePerKg;
 
     // Get user for Paystack initialization
-    const { UserRepository } = await import("../repository/user");
     const userRepo = new UserRepository();
     const user = await userRepo.findById(userId);
 
@@ -335,8 +337,6 @@ export default class GasPurchaseService {
         return;
       }
 
-      // Get user details
-      const { UserRepository } = await import("../repository/user");
       const userRepo = new UserRepository();
       const user = await userRepo.findById(purchase.userId);
 
@@ -345,26 +345,22 @@ export default class GasPurchaseService {
         return;
       }
 
-      // Get meter details
       const meter = await MeterRepo.findById(purchase.meterId);
       if (!meter) {
         logger.warn(`Meter not found for purchase: ${purchaseId}`);
         return;
       }
 
-      // Get transaction for reference
       const transaction = await this.transactionRepo.findById(purchase.transactionId);
 
-      // Format amount (convert from kobo to naira)
       const amountInNaira = (Number(purchase.amountPaid) / 100).toLocaleString("en-NG", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       });
 
-      const EmailService = (await import("./email.service")).default;
       await EmailService.sendEmail({
         to: user.email,
-        subject: "Gas Purchase Successful - Dispensing in Progress",
+        subject: `Your Gas is On Its Way - Payment Confirmed`,
         template: "gas-purchase-success",
         context: {
           firstName: user.firstName || "Valued Customer",
@@ -382,6 +378,8 @@ export default class GasPurchaseService {
           meterNumber: meter.meterNumber || meter.deviceId,
           estateName: meter.estateName,
           houseNumber: meter.houseNumber,
+          dashboardUrl: `${envConfig.app.url}/dashboard`,
+          buyGasUrl: `${envConfig.app.url}/dashboard?buy=1`,
         },
       });
 
