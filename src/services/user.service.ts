@@ -3,6 +3,7 @@ import { UserRepository } from "../repository/user";
 import { EstateRepo } from "../repository/estate";
 import AppError from "../utils/appError";
 import ResponseHelper from "../utils/helpers/response.helper";
+import { enqueueDVAGeneration } from "../queues/dva-generation.queue";
 
 export default class UserService {
   private static userRepository = new UserRepository();
@@ -27,7 +28,7 @@ export default class UserService {
       estateId = data.estateId;
     }
 
-    return await this.userRepository.update(userId, {
+    const updatedUser = await this.userRepository.update(userId, {
       firstName: data.firstName,
       lastName: data.lastName,
       phoneNumber: data.phoneNumber,
@@ -39,6 +40,13 @@ export default class UserService {
       onboardingCompleted: true,
       updatedAt: new Date(),
     });
+
+ 
+    if (user.emailVerified) {
+      await enqueueDVAGeneration(userId);
+    }
+
+    return updatedUser;
   }
 
   static async getProfile(userId: string) {

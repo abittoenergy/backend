@@ -92,7 +92,7 @@ export function createRateLimiter(options: LimiterOptions) {
 
 export const globalRateLimiter = createRateLimiter({
   keyPrefix: "rl:global",
-  points: 1000,
+  points: 100,
   duration: 15 * 60
 });
 

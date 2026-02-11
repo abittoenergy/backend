@@ -7,6 +7,7 @@ import EmailService from "./email.service";
 import { User } from "../db/schema/users.schema";
 import { OTP_TYPES, OtpType } from "../utils/constants/otp";
 import envConfig from "../config/env";
+import DVAGenerationQueue, { enqueueDVAGeneration } from "../queues/dva-generation.queue";
 
 export default class AuthService {
 
@@ -86,6 +87,9 @@ export default class AuthService {
           loginUrl: `${envConfig.baseUrl}/login`,
         },
       });
+
+
+      await enqueueDVAGeneration(user.id);
     }
 
     const token = AuthHelper.createAuthToken(user.id);

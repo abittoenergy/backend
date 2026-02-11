@@ -4,6 +4,7 @@ import RedisClient from "ioredis";
 import logger from "./logger";
 import envConfig from "./env";
 import DailyQueue from "../queues/daily.queue";
+import DVACheckerQueue from "../queues/dva-checker.queue";
 import { withOperationContext } from "../utils/loggerWithContext";
 export default class RedisManager {
     private static instance: RedisManager;
@@ -151,6 +152,60 @@ export default class RedisManager {
     private async scheduleJobs(): Promise<void> {
         logger.info("scheduleJobs() entering");
         try {
+            const leaderKey = "locks:scheduler:leader";
+
+            const acquired = await this.client!.set(leaderKey, String(process.pid), "EX", 120, "NX");
+            if (acquired !== "OK") {
+                logger.info(
+                    "Another instance is the scheduler leader; skipping scheduleJobs()",
+                    withOperationContext("system", {
+                        action: "schedule_jobs_skipped"
+                    })
+                );
+                return;
+            }
+
+            await DailyQueue.add({}, { repeat: { cron: "0 0 * * *", tz: "UTC" } });
+
+
+            const dvaCheckerCron = "* * * * *"; // Every minute
+            const dvaCheckerJobId = "dva-checker-cron";
+
+            const existingDVAChecker = await DVACheckerQueue.getRepeatableJobs();
+            const alreadyDVAChecker = existingDVAChecker.some(
+                (j) => j.id === dvaCheckerJobId && j.cron === dvaCheckerCron
+            );
+
+            if (!alreadyDVAChecker) {
+                await DVACheckerQueue.add(
+                    {},
+                    {
+                        jobId: dvaCheckerJobId,
+                        repeat: { cron: dvaCheckerCron, tz: "UTC" },
+                        removeOnComplete: true,
+                        removeOnFail: 100
+                    }
+                );
+                logger.info(
+                    "[dva-checker] scheduled",
+                    withOperationContext("system", {
+                        cron: dvaCheckerCron,
+                        tz: "UTC",
+                        id: dvaCheckerJobId,
+                        action: "dva_checker_scheduled"
+                    })
+                );
+            } else {
+                logger.info(
+                    "[dva-checker] already scheduled; skipping re-add",
+                    withOperationContext("system", {
+                        cron: dvaCheckerCron,
+                        tz: "UTC",
+                        id: dvaCheckerJobId,
+                        action: "dva_checker_already_scheduled"
+                    })
+                );
+            }
         } catch (err: any) {
             logger.error(
                 "scheduleJobs() failed",

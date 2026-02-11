@@ -23,7 +23,12 @@ import DataHelpers from "./utils/helpers/data.helpers";
 import AppRouter from "./routes/app.routes";
 import AppError from "./utils/appError";
 import "./config/db";
-// import "./config/redis";
+import { getRedisClient } from "./config/redis";
+
+import "./queues/daily.queue";
+import "./queues/dva-checker.queue";
+import "./queues/dva-generation.queue";
+
 import { connectMqtt } from "./config/mqtt";
 import EmailService from "./services/email.service";
 
@@ -73,6 +78,17 @@ app.use((req: ReqWithMeta, res: ExpressResponse, next: NextFunction) => {
 
     next();
 });
+
+(async () => {
+    try {
+        await getRedisClient();
+        
+        logger.info("Services initialized successfully");
+    } catch (e) {
+        logger.error("Failed to initialize services", e);
+        process.exit(1);
+    }
+})();
 
 app.get("/", (_req: ExpressRequest, res: ExpressResponse) => {
     res.status(200).json({
