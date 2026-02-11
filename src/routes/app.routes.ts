@@ -7,10 +7,15 @@ import OTPRouter from "./otp.routes";
 import UserRouter from "./user.routes";
 import WalletRouter from "./wallet.routes";
 import WebhookRouter from "./webhook.routes";
+import SystemSettingsRouter from "./system-settings.routes";
 
 const AppRouter = express.Router();
 
 const appRoutes: Routes = [
+    {
+        path: "/settings",
+        router: SystemSettingsRouter
+    },
     {
         path: "/auth",
         router: AuthRouter,

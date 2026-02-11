@@ -23,7 +23,6 @@ jobs:
           heroku_app_name: ${{ secrets.HEROKU_STAGING_APP_NAME }}
           heroku_email: ${{ secrets.HEROKU_EMAIL }}
           dontautocreate: true
-          usedocker: true
 
       - name: Deploy to Production
         if: github.ref == 'refs/heads/main'
@@ -33,4 +32,3 @@ jobs:
           heroku_app_name: ${{ secrets.HEROKU_PRODUCTION_APP_NAME }}
           heroku_email: ${{ secrets.HEROKU_EMAIL }}
           dontautocreate: true
-          usedocker: true

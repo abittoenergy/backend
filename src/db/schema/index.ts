@@ -7,4 +7,5 @@ export * from "./meters.schema";
 export * from "./meter-link-requests.schema";
 export * from "./wallets.schema";
 export * from "./transactions.schema";
+export * from "./system-settings.schema";
 

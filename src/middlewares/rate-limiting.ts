@@ -110,3 +110,12 @@ export const userRateLimiter = createRateLimiter({
     logger.info(`Rate limit exceeded for key: ${args.key}`);
   }
 });
+
+export const systemSettingsRateLimiter = createRateLimiter({
+  keyPrefix: "rl:system-settings",
+  points: 100,
+  duration: 60 * 60,
+  onBlocked: (args) => {
+    logger.info(`Rate limit exceeded for key: ${args.key}`);
+  }
+});
