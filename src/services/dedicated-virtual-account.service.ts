@@ -210,7 +210,16 @@ export class DedicatedVirtualAccountService {
           accountName: dvaData.account_name,
           bankName: dvaData.bank?.name || "Bank",
           customerEmail: user.email,
+          topupUrl: `${envConfig.app.url}/wallet/topup`,
         },
+      });
+
+      // Create in-app notification
+      const NotificationService = (await import("./notification.service")).default;
+      await NotificationService.createNotification(userId, {
+        title: "Virtual Account Ready",
+        description: `Your dedicated account ${dvaData.account_number} is now active for wallet funding`,
+        category: "ACCOUNT",
       });
 
       logger.info(`DVA created email sent`, {

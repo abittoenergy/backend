@@ -379,8 +379,16 @@ export default class GasPurchaseService {
           estateName: meter.estateName,
           houseNumber: meter.houseNumber,
           dashboardUrl: `${envConfig.app.url}/dashboard`,
-          buyGasUrl: `${envConfig.app.url}/dashboard?buy=1`,
+          buyGasUrl: `${envConfig.app.url}/gas-purchase`,
         },
+      });
+
+      // Create in-app notification
+      const NotificationService = (await import("./notification.service")).default;
+      await NotificationService.createNotification(purchase.userId, {
+        title: "Gas Purchase Successful",
+        description: `${purchase.kgPurchased} kg of gas is being dispensed to meter ${meter.meterNumber || meter.deviceId}`,
+        category: "GAS_PURCHASE",
       });
 
       logger.info(`Gas purchase success email sent`, {

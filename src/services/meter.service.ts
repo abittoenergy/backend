@@ -175,20 +175,40 @@ export default class MeterService {
     }
 
     if (user && meter) {
+      // Create in-app notification
+      const NotificationService = (await import("./notification.service")).default;
+
+      if (status === LinkRequestStatus.APPROVED) {
+        await NotificationService.createNotification(user.id, {
+          title: "Meter Linked Successfully",
+          description: `Meter ${meter.meterNumber || meter.deviceId} has been linked to your account`,
+          category: "METER",
+        });
+      } else if (status === LinkRequestStatus.REJECTED) {
+        await NotificationService.createNotification(user.id, {
+          title: "Meter Link Request Rejected",
+          description: `Your request to link meter ${meter.meterNumber || meter.deviceId} was not approved${reason ? `: ${reason}` : ""}`,
+          category: "METER",
+        });
+      }
+
       EmailService.sendEmail({
         to: user.email,
         subject: `Meter Link Request ${status.charAt(0).toUpperCase() + status.slice(1)}`,
         template: "meter-link-status-update",
         context: {
-          firstName: user.firstName,
-          meterNumber: meter.meterNumber,
-          status: status.toUpperCase(),
-          statusLowercase: status.toLowerCase(),
-          isRejected: status === LinkRequestStatus.REJECTED,
-          reason: reason,
+          firstName: user.firstName || "User",
+          meterNumber: meter.meterNumber || meter.deviceId,
+          status,
+          reason: reason || "N/A",
+          approved: status === LinkRequestStatus.APPROVED,
         },
-      }).catch((error) => {
-        logger.error("Failed to send user notification email:", error);
+      }).catch((error: any) => {
+        logger.error("Failed to send meter link status email", {
+          error: error.message,
+          userId: user.id,
+          requestId,
+        });
       });
     }
 

@@ -298,6 +298,14 @@ export default class WebhookController {
         },
       });
 
+      // Create in-app notification
+      const NotificationService = (await import("../services/notification.service")).default;
+      await NotificationService.createNotification(userId, {
+        title: "Wallet Funded Successfully",
+        description: `Your wallet has been credited with ₦${amount}. New balance: ₦${newBalance}`,
+        category: "WALLET",
+      });
+
       logger.info(`Wallet top-up email sent`, {
         userId,
         email: user.email,
@@ -345,6 +353,14 @@ export default class WebhookController {
           }),
           retryUrl: `${envConfig.app.url}/wallet/topup`,
         },
+      });
+
+      // Create in-app notification
+      const NotificationService = (await import("../services/notification.service")).default;
+      await NotificationService.createNotification(userId, {
+        title: "Payment Could Not Be Completed",
+        description: `Payment of ₦${amount} failed. ${paystackData.gateway_response || "Payment declined"}`,
+        category: "WALLET",
       });
 
       logger.info(`Payment failed email sent`, {

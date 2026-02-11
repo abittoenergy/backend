@@ -92,6 +92,13 @@
       "when": 1770806320937,
       "tag": "0012_typical_starbolt",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1770813617302,
+      "tag": "0013_thankful_eternals",
+      "breakpoints": true
     }
   ]
 }
