@@ -4,10 +4,11 @@ import AppError from "../utils/appError";
 import ResponseHelper from "../utils/helpers/response.helper";
 import OTPService from "./otp.service";
 import EmailService from "./email.service";
+import { ChangePasswordInput } from "../validators/auth.validator";
 import { User } from "../db/schema/users.schema";
 import { OTP_TYPES, OtpType } from "../utils/constants/otp";
 import envConfig from "../config/env";
-import DVAGenerationQueue, { enqueueDVAGeneration } from "../queues/dva-generation.queue";
+import { enqueueDVAGeneration } from "../queues/dva-generation.queue";
 
 export default class AuthService {
 
@@ -100,5 +101,32 @@ export default class AuthService {
       user: updatedUser,
       token,
     };
+  }
+
+  async changePassword(userId: string, data: ChangePasswordInput): Promise<void> {
+    const user = await this.userRepository.findById(userId);
+    if (!user || !user.passwordHash) {
+      throw new AppError("User not found", ResponseHelper.RESOURCE_NOT_FOUND);
+    }
+
+    const isPasswordValid = await AuthHelper.verifyBcryptPassword(data.currentPassword, user.passwordHash);
+    if (!isPasswordValid) {
+      throw new AppError("Invalid current password", ResponseHelper.UNAUTHORIZED);
+    }
+
+    const newPasswordHash = await AuthHelper.passwordToHash(data.newPassword);
+    await this.userRepository.update(userId, { passwordHash: newPasswordHash });
+
+    await EmailService.sendEmail({
+      to: user.email!,
+      subject: "Password Changed Successfully",
+      template: "password-changed",
+      context: {
+        firstName: user.firstName || "User",
+        logoUrl: `${envConfig.baseUrl}/static/images/logo.png`,
+      },
+    }).catch(err => {
+      console.error("Failed to send password-changed email:", err);
+    });
   }
 }

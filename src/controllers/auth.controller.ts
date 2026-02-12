@@ -65,4 +65,27 @@ export default class AuthController {
             next(error);
         }
     });
+
+    static changePassword = ControllerHelper.createHandler("change-password", async (req, res, next) => {
+        try {
+            const userId = (req as any).user.id;
+            const parsed = AuthValidator.changePassword(req.body);
+
+            if (!parsed.success) {
+                const message = parsed.error.errors?.[0]?.message || "Validation failed";
+                return next(new AppError(message, ResponseHelper.BAD_REQUEST));
+            }
+
+            await AuthController.authService.changePassword(userId, parsed.data);
+
+            ResponseHelper.sendSuccessResponse(res, {
+                message: "Password changed successfully",
+            });
+        } catch (error) {
+            logger.error(`${req.headers.reqName} request failed [${req.headers.reqId}]`, {
+                error,
+            });
+            next(error);
+        }
+    });
 }

@@ -66,6 +66,21 @@ export const updateProfileOnboardingSchema = z.object({
 });
 export type UpdateProfileOnboardingInput = z.infer<typeof updateProfileOnboardingSchema>;
 
+export const changePasswordSchema = z.object({
+    currentPassword: z.string({ required_error: "Current password is required" }),
+    newPassword: passwordSchema,
+    confirmPassword: z.string({ required_error: "Confirm password is required" }),
+}).superRefine((data, ctx) => {
+    if (data.newPassword !== data.confirmPassword) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "New passwords do not match",
+            path: ["confirmPassword"],
+        });
+    }
+});
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+
 export default class AuthValidator {
 
     static signup(data: unknown) {
@@ -81,6 +96,10 @@ export default class AuthValidator {
 
     static updateProfileOnboarding(data: unknown) {
         return updateProfileOnboardingSchema.safeParse(data);
+    }
+
+    static changePassword(data: unknown) {
+        return changePasswordSchema.safeParse(data);
     }
 
 }
