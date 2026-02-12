@@ -44,4 +44,26 @@ export default class MeterValidator {
   static validateProcessMeterLinkRequest(data: unknown) {
     return processMeterLinkRequestSchema.safeParse(data);
   }
+
+  static validateAdminGetLinkRequestsQuery(data: unknown) {
+    const schema = z.object({
+      page: z.string().optional(),
+      limit: z.string().optional(),
+      status: z.nativeEnum(LinkRequestStatus).optional(),
+      search: z.string().optional(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+    });
+    return schema.safeParse(data);
+  }
+
+  static validateAdminGetMetersQuery(data: unknown) {
+    const schema = z.object({
+      page: z.string().optional().transform(val => val ? parseInt(val, 10) : 1),
+      limit: z.string().optional().transform(val => val ? parseInt(val, 10) : 20),
+      search: z.string().optional(),
+      isLinked: z.string().optional().transform(val => val === "true" ? true : val === "false" ? false : undefined),
+    });
+    return schema.safeParse(data);
+  }
 }

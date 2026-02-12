@@ -65,8 +65,12 @@ export default class MeterController {
       return next(new AppError("User not found", ResponseHelper.FORBIDDEN));
     }
 
-    const { status } = req.query as any;
-    const data = await MeterService.getMeterLinkRequests(status);
+    const validation = MeterValidator.validateAdminGetLinkRequestsQuery(req.query);
+    if (!validation.success) {
+      return next(new AppError(validation.error.errors[0].message, ResponseHelper.BAD_REQUEST));
+    }
+
+    const data = await MeterService.getMeterLinkRequests(validation.data as any);
 
     ResponseHelper.sendSuccessResponse(res, {
       message: "Meter link requests retrieved successfully",
@@ -131,6 +135,30 @@ export default class MeterController {
 
     ResponseHelper.sendSuccessResponse(res, {
       message: "User meters retrieved successfully",
+      data,
+    });
+  });
+
+  static adminGetMeters = ControllerHelper.createHandler("admin-get-meters", async (req, res, next) => {
+    const data = await MeterService.adminGetMeters(req.query as any);
+
+    ResponseHelper.sendSuccessResponse(res, {
+      message: "Admin meters list retrieved successfully",
+      data,
+    });
+  });
+
+  static adminUnlinkMeter = ControllerHelper.createHandler("admin-unlink-meter", async (req, res, next) => {
+    const { deviceId } = req.params;
+
+    if (!deviceId) {
+      return next(new AppError("deviceId is required", ResponseHelper.BAD_REQUEST));
+    }
+
+    const data = await MeterService.adminUnlinkMeter(deviceId);
+
+    ResponseHelper.sendSuccessResponse(res, {
+      message: "Meter unlinked successfully",
       data,
     });
   });

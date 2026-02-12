@@ -143,8 +143,48 @@ export default class MeterService {
     return request;
   }
 
-  static async getMeterLinkRequests(status?: LinkRequestStatus) {
-    return await this.meterLinkRequestRepo.findAll({ status });
+  static async getMeterLinkRequests(query: {
+    status?: LinkRequestStatus;
+    search?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: string;
+    limit?: string;
+  }) {
+    const page = parseInt(query.page || "1", 10);
+    const limit = parseInt(query.limit || "20", 10);
+
+    let startDate: Date | undefined;
+    let endDate: Date | undefined;
+
+    if (query.startDate) startDate = new Date(query.startDate);
+    if (query.endDate) {
+      endDate = new Date(query.endDate);
+      endDate.setHours(23, 59, 59, 999);
+    }
+
+    const [stats, { results, total }] = await Promise.all([
+      this.meterLinkRequestRepo.getGlobalStats(),
+      this.meterLinkRequestRepo.findAllAdmin({
+        page,
+        limit,
+        status: query.status,
+        search: query.search,
+        startDate,
+        endDate,
+      }),
+    ]);
+
+    return {
+      stats,
+      requests: results,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   static async processMeterLinkRequest(requestId: string, adminId: string, status: LinkRequestStatus, reason?: string) {
@@ -222,5 +262,68 @@ export default class MeterService {
       meters,
       count: meters.length,
     };
+  }
+
+  static async adminGetMeters(query: { page?: string, limit?: string, search?: string, isLinked?: string }) {
+    const page = parseInt(query.page || "1", 10);
+    const limit = parseInt(query.limit || "20", 10);
+    const isLinked = query.isLinked === "true" ? true : query.isLinked === "false" ? false : undefined;
+
+    const [stats, { results, total }] = await Promise.all([
+      MeterRepo.getStats(),
+      MeterRepo.findAllAdmin({
+        page,
+        limit,
+        search: query.search,
+        isLinked,
+      }),
+    ]);
+
+    return {
+      stats,
+      meters: results,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  static async adminUnlinkMeter(deviceId: string) {
+    const meter = await MeterRepo.findByDeviceId(deviceId);
+
+    if (!meter) {
+      throw new AppError("Meter not found", ResponseHelper.RESOURCE_NOT_FOUND);
+    }
+
+    if (!meter.userId) {
+      throw new AppError("Meter is not linked to any user", ResponseHelper.BAD_REQUEST);
+    }
+
+    const originalUserId = meter.userId;
+    const updatedMeter = await MeterRepo.unlinkUser(deviceId);
+
+    if (!updatedMeter) {
+      return updatedMeter;
+    }
+
+    if (originalUserId) {
+      const user = await this.userRepo.findById(originalUserId);
+      if (user) {
+        // Create in-app notification
+        const NotificationService = (await import("./notification.service")).default;
+        await NotificationService.createNotification(user.id, {
+          title: "Meter Unlinked",
+          description: `Meter ${meter.meterNumber || meter.deviceId} has been unlinked from your account`,
+          category: "METER",
+        }).catch((err) => {
+          logger.error(`Failed to create unlink notification for user ${user.id}:`, err);
+        });
+      }
+    }
+
+    return updatedMeter;
   }
 }
