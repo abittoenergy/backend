@@ -163,4 +163,23 @@ export default class MeterController {
     });
   });
 
+  static adminLinkMeter = ControllerHelper.createHandler("admin-link-meter", async (req, res, next) => {
+    const { meterNumber } = req.params;
+    if (!meterNumber) {
+      return next(new AppError("meterNumber is required", ResponseHelper.BAD_REQUEST));
+    }
+
+    const validation = MeterValidator.validateAdminLinkMeter(req.body);
+    if (!validation.success) {
+      return next(new AppError(validation.error.errors[0].message, ResponseHelper.BAD_REQUEST));
+    }
+
+    const data = await MeterService.adminLinkMeter(meterNumber, validation.data);
+
+    ResponseHelper.sendSuccessResponse(res, {
+      message: "Meter linked to user successfully",
+      data,
+    });
+  });
+
 }

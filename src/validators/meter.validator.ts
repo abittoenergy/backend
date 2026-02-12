@@ -1,13 +1,16 @@
 import { z } from "zod";
 import { LinkRequestStatus } from "../db/schema/meter-link-requests.schema";
 
-export const requestMeterLinkSchema = z.object({
-  estateId: z.string({ required_error: "Estate is required" }).uuid({
-    message: "Invalid estate ID",
-  }),
+export const baseMeterLinkSchema = z.object({
+  estateId: z.union([
+    z.string().uuid({ message: "Invalid estate ID" }),
+    z.literal("OTHER")
+  ], { required_error: "Estate is required" }),
   estateName: z.string().optional(),
   houseNumber: z.string({ required_error: "House number is required" }),
-}).superRefine((data, ctx) => {
+});
+
+const meterLinkRefinement = (data: { estateId: string, estateName?: string }, ctx: z.RefinementCtx) => {
   if (data.estateId === "OTHER" && !data.estateName) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -15,7 +18,9 @@ export const requestMeterLinkSchema = z.object({
       path: ["estateName"],
     });
   }
-});
+};
+
+export const requestMeterLinkSchema = baseMeterLinkSchema.superRefine(meterLinkRefinement);
 
 export type RequestMeterLinkInput = z.infer<typeof requestMeterLinkSchema>;
 
@@ -36,9 +41,21 @@ export const processMeterLinkRequestSchema = z.object({
 
 export type ProcessMeterLinkRequestInput = z.infer<typeof processMeterLinkRequestSchema>;
 
+export const adminLinkMeterSchema = baseMeterLinkSchema.extend({
+  userId: z.string({ required_error: "User ID is required" }).uuid({
+    message: "Invalid user ID",
+  }),
+}).superRefine(meterLinkRefinement);
+
+export type AdminLinkMeterInput = z.infer<typeof adminLinkMeterSchema>;
+
 export default class MeterValidator {
   static validateRequestMeterLink(data: unknown) {
     return requestMeterLinkSchema.safeParse(data);
+  }
+
+  static validateAdminLinkMeter(data: unknown) {
+    return adminLinkMeterSchema.safeParse(data);
   }
 
   static validateProcessMeterLinkRequest(data: unknown) {

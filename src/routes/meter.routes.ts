@@ -26,5 +26,6 @@ MeterRouter.patch("/link-requests/:id", meterRateLimiter, AuthMiddleware.protect
 // ADMIN METER MANAGEMENT
 MeterRouter.get("/admin/meters", meterRateLimiter, AuthMiddleware.protect, AuthMiddleware.restrictTo("admin", "super-admin"), MeterController.adminGetMeters);
 MeterRouter.post("/admin/meters/:deviceId/unlink", meterRateLimiter, AuthMiddleware.protect, AuthMiddleware.restrictTo("admin", "super-admin"), MeterController.adminUnlinkMeter);
+MeterRouter.post("/admin/link/:meterNumber", meterRateLimiter, AuthMiddleware.protect, AuthMiddleware.restrictTo("admin", "super-admin"), MeterController.adminLinkMeter);
 
 export default MeterRouter;

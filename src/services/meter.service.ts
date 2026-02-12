@@ -1,4 +1,5 @@
 import { MeterRepo } from "../repository/meter";
+import { AdminLinkMeterInput } from "../validators/meter.validator";
 import { MeterLinkRequestRepo } from "../repository/meter-link-request";
 import { MeterStatus } from "../db/schema/meters.schema";
 import { LinkRequestStatus } from "../db/schema/meter-link-requests.schema";
@@ -10,6 +11,7 @@ import envConfig from "../config/env";
 import { UserRepository } from "../repository/user";
 import { EstateRepo } from "../repository/estate";
 import logger from "../config/logger";
+import NotificationService from "./notification.service";
 
 export default class MeterService {
 
@@ -323,6 +325,53 @@ export default class MeterService {
         });
       }
     }
+
+    return updatedMeter;
+  }
+
+  static async adminLinkMeter(meterNumber: string, data: AdminLinkMeterInput) {
+    const user = await this.userRepo.findById(data.userId);
+    if (!user) {
+      throw new AppError("User not found", ResponseHelper.RESOURCE_NOT_FOUND);
+    }
+
+    const meter = await MeterRepo.findByMeterNumber(meterNumber);
+    if (!meter) {
+      throw new AppError("Meter not found", ResponseHelper.RESOURCE_NOT_FOUND);
+    }
+
+    if (meter.userId) {
+      throw new AppError("Meter is already linked to another account", ResponseHelper.BAD_REQUEST);
+    }
+
+    const updatedMeter = await MeterRepo.linkUser(meter.deviceId, data.userId, {
+      estateId: data.estateId === "OTHER" ? undefined : data.estateId,
+      houseNumber: data.houseNumber,
+      estateName: data.estateId === "OTHER" ? data.estateName : undefined,
+    }, meterNumber);
+
+    if (!updatedMeter) {
+      throw new AppError("Failed to link meter", ResponseHelper.INTERNAL_SERVER_ERROR);
+    }
+
+    await NotificationService.createNotification(user.id, {
+      title: "Meter Linked",
+      description: `Meter ${meter.meterNumber || meter.deviceId} has been successfully linked to your account by an administrator`,
+      category: "METER",
+    }).catch(err => logger.error(`Admin Link: Failed to create in-app notification: ${err.message}`));
+
+    EmailService.sendEmail({
+      to: user.email,
+      subject: "Meter Linked Successfully",
+      template: "meter-link-status-update",
+      context: {
+        firstName: user.firstName || "User",
+        meterNumber: meter.meterNumber || meter.deviceId,
+        status: LinkRequestStatus.APPROVED,
+        reason: "Admin linked meter directly",
+        approved: true,
+      },
+    }).catch(err => logger.error(`Admin Link: Failed to send email: ${err.message}`));
 
     return updatedMeter;
   }
