@@ -57,4 +57,43 @@ export default class UserService {
     const { passwordHash, ...safeUser } = user;
     return safeUser;
   }
+
+  static async adminGetUsers(query: {
+    page?: string;
+    limit?: string;
+    search?: string;
+    isActive?: string;
+  }) {
+    const page = parseInt(query.page || "1", 10);
+    const limit = parseInt(query.limit || "20", 10);
+    const isActive = query.isActive === "true" ? true : query.isActive === "false" ? false : undefined;
+
+    const [stats, { results, total }] = await Promise.all([
+      this.userRepository.getGlobalStats(),
+      this.userRepository.findAllAdmin({
+        page,
+        limit,
+        search: query.search,
+        isActive,
+      }),
+    ]);
+
+    const percentageWithoutMeters = stats.totalUsers > 0
+      ? ((stats.usersWithoutMeters / stats.totalUsers) * 100).toFixed(2)
+      : "0";
+
+    return {
+      stats: {
+        ...stats,
+        percentageWithoutMeters: parseFloat(percentageWithoutMeters),
+      },
+      users: results,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
 }

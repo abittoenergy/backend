@@ -50,4 +50,25 @@ export default class UserController {
       },
     });
   });
+
+  static adminGetUsers = ControllerHelper.createHandler("user.admin-get-users", async (req, res, next) => {
+    const { id: userId } = (req as any).user;
+    if (!userId) {
+      return next(new AppError("User not found", ResponseHelper.RESOURCE_NOT_FOUND));
+    }
+
+    const UserValidator = (await import("../validators/user.validator")).default;
+    const validation = UserValidator.validateAdminGetUsersQuery(req.query);
+    if (!validation.success) {
+      const message = validation.error.errors?.[0]?.message || "Validation failed";
+      return next(new AppError(message, ResponseHelper.BAD_REQUEST));
+    }
+
+    const result = await UserService.adminGetUsers(validation.data as any);
+
+    ResponseHelper.sendSuccessResponse(res, {
+      message: "Users retrieved successfully",
+      data: result,
+    });
+  });
 }
