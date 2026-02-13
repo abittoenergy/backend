@@ -53,4 +53,25 @@ export default class EstateController {
       data,
     });
   });
+
+  static adminGetEstates = ControllerHelper.createHandler("admin-get-estates", async (req, res, next) => {
+    const { id: userId } = (req as any).user;
+    if (!userId) {
+      return next(new AppError("User not found", ResponseHelper.RESOURCE_NOT_FOUND));
+    }
+
+    const EstateValidator = (await import("../validators/estate.validator")).default;
+    const validation = EstateValidator.validateAdminGetEstatesQuery(req.query);
+    if (!validation.success) {
+      const message = validation.error.errors?.[0]?.message || "Validation failed";
+      return next(new AppError(message, ResponseHelper.BAD_REQUEST));
+    }
+
+    const data = await EstateController.estateService.adminGetEstates(validation.data as any);
+
+    ResponseHelper.sendSuccessResponse(res, {
+      message: "Estates retrieved successfully",
+      data,
+    });
+  });
 }

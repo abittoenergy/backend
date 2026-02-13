@@ -22,4 +22,12 @@ EstateRouter.put(
 
 EstateRouter.get("/", AuthMiddleware.protect, EstateController.getEstates);
 
+// ADMIN ESTATE MANAGEMENT
+EstateRouter.get(
+  "/admin/list",
+  AuthMiddleware.protect,
+  AuthMiddleware.restrictTo(Role.ADMIN, Role.SUPER_ADMIN),
+  EstateController.adminGetEstates
+);
+
 export default EstateRouter;
