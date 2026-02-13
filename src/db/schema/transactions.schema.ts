@@ -2,7 +2,7 @@ import { pgTable, uuid, timestamp, bigint, varchar, text, jsonb, pgEnum } from "
 import { users } from "./users.schema";
 import { wallets } from "./wallets.schema";
 
-export const transactionTypeEnum = pgEnum("transaction_type", ["WALLET_TOPUP", "WALLET_DEBIT","GAS_PURCHASE_ONLINE"]);
+export const transactionTypeEnum = pgEnum("transaction_type", ["WALLET_TOPUP", "GAS_PURCHASE_WALLET","GAS_PURCHASE_ONLINE"]);
 export const transactionStatusEnum = pgEnum("transaction_status", ["PENDING", "SUCCESS", "FAILED"]);
 export const paymentProviderEnum = pgEnum("payment_provider", ["PAYSTACK"]);
 

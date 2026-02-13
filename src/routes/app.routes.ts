@@ -11,6 +11,7 @@ import SystemSettingsRouter from "./system-settings.routes";
 import DVARouter from "./dva.routes";
 import GasPurchaseRouter from "./gas-purchase.routes";
 import NotificationRouter from "./notification.routes";
+import TransactionRouter from "./transaction.routes";
 
 const AppRouter = express.Router();
 
@@ -58,6 +59,10 @@ const appRoutes: Routes = [
     {
         path: "/notifications",
         router: NotificationRouter
+    },
+    {
+        path: "/transactions",
+        router: TransactionRouter
     }
 ];
 
