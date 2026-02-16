@@ -66,19 +66,15 @@ export default class WebhookController {
       return;
     }
 
-    // Handle charge.success event
     if (event === "charge.success") {
-      // Check if this is a DVA transfer (bank transfer to dedicated account)
       const isDVATransfer = data.authorization?.channel === "dedicated_nuban" ||
         data.authorization?.card_type === "transfer";
 
       if (isDVATransfer) {
-        // This is a bank transfer to user's DVA - credit wallet directly
         await this.handleDVATransfer(data);
         return;
       }
 
-      // This is a regular card payment - check transaction type
       const transaction = await this.transactionRepo.findByReference(reference);
 
       if (!transaction) {
@@ -91,17 +87,14 @@ export default class WebhookController {
         return res.status(200).send("Already processed");
       }
 
-      // Check if this is a gas purchase
       if (transaction.type === "GAS_PURCHASE_ONLINE") {
         await this.handleGasPurchasePayment(transaction, data);
         logger.info(`Gas purchase payment successful for reference: ${reference}`);
         return;
       }
 
-      // Regular wallet topup
       await WalletService.processSuccessfulTopup(transaction, data);
 
-      // Send success email (non-blocking)
       this.sendWalletTopupEmail(transaction.userId, transaction, data).catch((error) => {
         logger.error("Failed to send wallet top-up email", {
           error: error.message,
@@ -114,7 +107,6 @@ export default class WebhookController {
       return;
     }
 
-    // Handle charge.failed event
     if (event === "charge.failed") {
       const transaction = await this.transactionRepo.findByReference(reference);
 

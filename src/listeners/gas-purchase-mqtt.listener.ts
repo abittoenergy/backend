@@ -16,6 +16,16 @@ export function initializeGasPurchaseMqttListener(): void {
       if (data.data.refillStatus) {
         handleRefillStatusUpdate(data);
       }
+
+      // Check if this is a usage report
+      if (data.data.gasUsage !== undefined) {
+        GasPurchaseService.handleGasUsage(data.deviceId, Number(data.data.gasUsage));
+      }
+
+      // Check if this is a balance request
+      if (data.data.requestBalance === true) {
+        GasPurchaseService.handleBalanceRequest(data.deviceId);
+      }
     } catch (error: any) {
       logger.error("Error processing MQTT device data", {
         error: error.message,

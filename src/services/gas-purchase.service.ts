@@ -11,11 +11,14 @@ import { SystemSettingsRepository } from "../repository/system-settings.repo";
 import EmailService from "./email.service";
 import envConfig from "../config/env";
 import { UserRepository } from "../repository/user";
+import { GasUsageAuditRepository } from "../repository/gas-usage-audit.repo";
 
 export default class GasPurchaseService {
   private static gasPurchaseRepo = new GasPurchaseRepository();
   private static transactionRepo = new TransactionRepository();
   private static settingsRepo = new SystemSettingsRepository();
+  private static userRepo = new UserRepository();
+  private static gasUsageAuditRepo = new GasUsageAuditRepository();
 
   /**
    * Initialize online gas purchase
@@ -145,20 +148,23 @@ export default class GasPurchaseService {
         return;
       }
 
-      // Send MQTT dispense command
-      await this.sendDispenseCommand(purchase.id);
+      const newBalance = await this.userRepo.updateGasBalance(purchase.userId, parseFloat(purchase.kgPurchased));
 
-      // Send success email to user (non-blocking)
-      this.sendPurchaseSuccessEmail(purchase.id).catch((error) => {
+      await this.gasPurchaseRepo.markRefillCompleted(purchase.id, purchase.kgPurchased);
+
+      this.sendPurchaseSuccessEmail(purchase.id, newBalance).catch((error) => {
         logger.error("Failed to send gas purchase success email", {
           error: error.message,
           purchaseId: purchase.id,
         });
       });
 
-      logger.info(`Gas purchase payment successful`, {
+      logger.info(`Gas purchase balance updated and completed`, {
         purchaseId: purchase.id,
         transactionId,
+        userId: purchase.userId,
+        kgPurchased: purchase.kgPurchased,
+        newBalance,
         reference: paystackData.reference,
       });
     } catch (error: any) {
@@ -291,6 +297,91 @@ export default class GasPurchaseService {
   }
 
   /**
+   * Handle gas usage report from IoT device
+   */
+  static async handleGasUsage(deviceId: string, kgUsed: number): Promise<void> {
+    try {
+      const meter = await MeterRepo.findByDeviceId(deviceId);
+      if (!meter || !meter.userId) {
+        logger.warn(`Usage reported for unknown or unlinked meter: ${deviceId}`);
+        return;
+      }
+
+      const userRepo = new UserRepository();
+      const user = await userRepo.findById(meter.userId);
+      if (!user) return;
+
+      const previousBalance = parseFloat(user.availableGasKg);
+      const newBalance = await userRepo.updateGasBalance(meter.userId, -kgUsed);
+
+
+      await this.gasUsageAuditRepo.create({
+        userId: meter.userId,
+        meterId: meter.id,
+        deviceId: deviceId,
+        kgUsed: kgUsed.toFixed(3),
+        previousBalance: previousBalance.toFixed(3),
+        newBalance: newBalance.toFixed(3),
+        metadata: { timestamp: new Date() },
+      });
+
+      logger.info(`Gas usage processed and audited`, {
+        deviceId,
+        userId: meter.userId,
+        kgUsed,
+        previousBalance,
+        newBalance,
+      });
+    } catch (error: any) {
+      logger.error("Failed to handle gas usage report", {
+        error: error.message,
+        deviceId,
+        kgUsed,
+      });
+    }
+  }
+
+  /**
+   * Handle balance request from IoT device
+   */
+  static async handleBalanceRequest(deviceId: string): Promise<void> {
+    try {
+      const meter = await MeterRepo.findByDeviceId(deviceId);
+      if (!meter || !meter.userId) {
+        logger.warn(`Balance requested for unknown or unlinked meter: ${deviceId}`);
+        return;
+      }
+
+      const userRepo = new UserRepository();
+      const user = await userRepo.findById(meter.userId);
+
+      if (!user) return;
+
+      const availableBalance = parseFloat(user.availableGasKg);
+
+      // Send MQTT response
+      mqttService.sendCommand(deviceId, {
+        commandId: `balance_resp_${Date.now()}`,
+        action: "BALANCE_RESPONSE",
+        params: {
+          availableGasKg: availableBalance,
+        },
+      });
+
+      logger.info(`Balance response sent to meter`, {
+        deviceId,
+        userId: user.id,
+        availableBalance,
+      });
+    } catch (error: any) {
+      logger.error("Failed to handle balance request", {
+        error: error.message,
+        deviceId,
+      });
+    }
+  }
+
+  /**
    * Get user's purchase history
    */
   static async getUserPurchaseHistory(userId: string) {
@@ -329,7 +420,7 @@ export default class GasPurchaseService {
    * Send purchase success email to user
    * @private
    */
-  private static async sendPurchaseSuccessEmail(purchaseId: string): Promise<void> {
+  private static async sendPurchaseSuccessEmail(purchaseId: string, newBalance?: number): Promise<void> {
     try {
       const purchase = await this.gasPurchaseRepo.findById(purchaseId);
       if (!purchase) {
@@ -360,12 +451,13 @@ export default class GasPurchaseService {
 
       await EmailService.sendEmail({
         to: user.email,
-        subject: `Your Gas is On Its Way - Payment Confirmed`,
+        subject: `Your Gas Balance has been Updated - Payment Confirmed`,
         template: "gas-purchase-success",
         context: {
           firstName: user.firstName || "Valued Customer",
           amountPaid: amountInNaira,
           kgPurchased: purchase.kgPurchased,
+          newBalance: newBalance?.toFixed(3) || parseFloat(user.availableGasKg).toFixed(3),
           gasPricePerKg: parseFloat(purchase.gasPricePerKg).toLocaleString("en-NG", {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
@@ -387,7 +479,7 @@ export default class GasPurchaseService {
       const NotificationService = (await import("./notification.service")).default;
       await NotificationService.createNotification(purchase.userId, {
         title: "Gas Purchase Successful",
-        description: `${purchase.kgPurchased} kg of gas is being dispensed to meter ${meter.meterNumber || meter.deviceId}`,
+        description: `${purchase.kgPurchased} kg of gas has been added to your available balance. New balance: ${newBalance?.toFixed(3) || parseFloat(user.availableGasKg).toFixed(3)} kg.`,
         category: "GAS_PURCHASE",
       });
 
@@ -447,17 +539,17 @@ export default class GasPurchaseService {
       // Get meter details
       const meter = await MeterRepo.findById(purchase.meterId);
 
+      const userRepo = new UserRepository();
+      const user = await userRepo.findById(purchase.userId);
+
       return {
         reference: transaction.reference,
         paymentStatus: transaction.status,
         purchaseStatus: purchase.status,
         amount: transaction.amount,
         kgPurchased: purchase.kgPurchased,
+        availableGasKg: user ? parseFloat(user.availableGasKg) : null,
         meterNumber: meter?.meterNumber || meter?.deviceId,
-        mqttCommandSent: purchase.mqttCommandSent,
-        refillStartedAt: purchase.refillStartedAt,
-        refillCompletedAt: purchase.refillCompletedAt,
-        kgDispensed: purchase.kgDispensed,
         createdAt: purchase.createdAt,
       };
     } catch (error: any) {

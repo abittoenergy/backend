@@ -131,5 +131,18 @@ export class UserRepository {
             totalKgBoughtToday: parseFloat(totalKgToday),
         };
     }
+
+    async updateGasBalance(userId: string, amountKg: number): Promise<number> {
+        const [result] = await this.db
+            .update(users)
+            .set({
+                availableGasKg: sql`${users.availableGasKg} + ${amountKg}`,
+                updatedAt: new Date(),
+            })
+            .where(eq(users.id, userId))
+            .returning({ availableGasKg: users.availableGasKg });
+
+        return parseFloat(result.availableGasKg);
+    }
 };
 
