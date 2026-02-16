@@ -10,6 +10,7 @@ import { DedicatedVirtualAccountService } from "../services/dedicated-virtual-ac
 import GasPurchaseService from "../services/gas-purchase.service";
 import EmailService from "../services/email.service";
 import { UserRepository } from "../repository/user";
+import NotificationService from "../services/notification.service";
 
 export default class WebhookController {
   private static transactionRepo = new TransactionRepository();
@@ -299,7 +300,6 @@ export default class WebhookController {
       });
 
       // Create in-app notification
-      const NotificationService = (await import("../services/notification.service")).default;
       await NotificationService.createNotification(userId, {
         title: "Wallet Funded Successfully",
         description: `Your wallet has been credited with ₦${amount}. New balance: ₦${newBalance}`,
@@ -356,7 +356,6 @@ export default class WebhookController {
       });
 
       // Create in-app notification
-      const NotificationService = (await import("../services/notification.service")).default;
       await NotificationService.createNotification(userId, {
         title: "Payment Could Not Be Completed",
         description: `Payment of ₦${amount} failed. ${paystackData.gateway_response || "Payment declined"}`,

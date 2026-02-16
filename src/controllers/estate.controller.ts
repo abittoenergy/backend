@@ -3,6 +3,7 @@ import ControllerHelper from "../utils/helpers/controller.helper";
 import ResponseHelper from "../utils/helpers/response.helper";
 import EstateService from "../services/estate.service";
 import AppError from "../utils/appError";
+import EstateValidator from "../validators/estate.validator";
 
 export default class EstateController {
   private static estateService = new EstateService();
@@ -60,7 +61,6 @@ export default class EstateController {
       return next(new AppError("User not found", ResponseHelper.RESOURCE_NOT_FOUND));
     }
 
-    const EstateValidator = (await import("../validators/estate.validator")).default;
     const validation = EstateValidator.validateAdminGetEstatesQuery(req.query);
     if (!validation.success) {
       const message = validation.error.errors?.[0]?.message || "Validation failed";

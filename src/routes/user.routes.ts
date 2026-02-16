@@ -10,5 +10,6 @@ UserRouter.get("/profile", userRateLimiter, AuthMiddleware.protect, UserControll
 
 // ADMIN USER MANAGEMENT
 UserRouter.get("/admin/users", userRateLimiter, AuthMiddleware.protect, AuthMiddleware.restrictTo("admin", "super-admin"), UserController.adminGetUsers);
+UserRouter.get("/admin/users/:userId/meters", userRateLimiter, AuthMiddleware.protect, AuthMiddleware.restrictTo("admin", "super-admin"), UserController.adminGetUserMeters);
 
 export default UserRouter;

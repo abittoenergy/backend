@@ -5,6 +5,8 @@ import ResponseHelper from "../utils/helpers/response.helper";
 import AppError from "../utils/appError";
 import AuthValidator from "../validators/auth.validator";
 import UserService from "../services/user.service";
+import UserValidator from "../validators/user.validator";
+import MeterService from "../services/meter.service";
 
 export default class UserController {
 
@@ -57,7 +59,6 @@ export default class UserController {
       return next(new AppError("User not found", ResponseHelper.RESOURCE_NOT_FOUND));
     }
 
-    const UserValidator = (await import("../validators/user.validator")).default;
     const validation = UserValidator.validateAdminGetUsersQuery(req.query);
     if (!validation.success) {
       const message = validation.error.errors?.[0]?.message || "Validation failed";
@@ -68,6 +69,20 @@ export default class UserController {
 
     ResponseHelper.sendSuccessResponse(res, {
       message: "Users retrieved successfully",
+      data: result,
+    });
+  });
+
+  static adminGetUserMeters = ControllerHelper.createHandler("user.admin-get-user-meters", async (req, res, next) => {
+    const { userId } = req.params;
+    if (!userId) {
+      return next(new AppError("User ID is required", ResponseHelper.BAD_REQUEST));
+    }
+
+    const result = await MeterService.getUserMeters(userId);
+
+    ResponseHelper.sendSuccessResponse(res, {
+      message: "User meters retrieved successfully",
       data: result,
     });
   });
