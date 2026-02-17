@@ -152,6 +152,14 @@ export default class GasPurchaseService {
 
       await this.gasPurchaseRepo.markRefillCompleted(purchase.id, purchase.kgPurchased);
 
+      // Notify device about successful purchase
+      this.sendPurchaseNotificationToDevice(purchase.id, newBalance).catch((error) => {
+        logger.error("Failed to send gas purchase notification to device", {
+          error: error.message,
+          purchaseId: purchase.id,
+        });
+      });
+
       this.sendPurchaseSuccessEmail(purchase.id, newBalance).catch((error) => {
         logger.error("Failed to send gas purchase success email", {
           error: error.message,
@@ -414,6 +422,56 @@ export default class GasPurchaseService {
     }
 
     return purchase;
+  }
+
+  /**
+   * Send MQTT notification to device about successful purchase
+   * @private
+   */
+  private static async sendPurchaseNotificationToDevice(purchaseId: string, newBalance?: number): Promise<void> {
+    try {
+      const purchase = await this.gasPurchaseRepo.findById(purchaseId);
+      if (!purchase) {
+        logger.warn(`Purchase not found for device notification: ${purchaseId}`);
+        return;
+      }
+
+      const meter = await MeterRepo.findById(purchase.meterId);
+      if (!meter) {
+        logger.warn(`Meter not found for device notification: ${purchaseId}`);
+        return;
+      }
+
+      let balance = newBalance;
+      if (balance === undefined) {
+        const user = await this.userRepo.findById(purchase.userId);
+        balance = user ? parseFloat(user.availableGasKg) : 0;
+      }
+
+      // Send MQTT command
+      mqttService.sendCommand(meter.deviceId, {
+        commandId: `purchase_conf_${purchaseId}_${Date.now()}`,
+        action: "PURCHASE_CONFIRMED",
+        params: {
+          purchaseId: purchase.id,
+          kgPurchased: parseFloat(purchase.kgPurchased),
+          availableGasKg: balance,
+        },
+      });
+
+      logger.info(`Device purchase notification sent`, {
+        purchaseId,
+        deviceId: meter.deviceId,
+        kgPurchased: purchase.kgPurchased,
+        availableGasKg: balance,
+      });
+    } catch (error: any) {
+      logger.error("Error sending device purchase notification", {
+        error: error.message,
+        stack: error.stack,
+        purchaseId,
+      });
+    }
   }
 
   /**
