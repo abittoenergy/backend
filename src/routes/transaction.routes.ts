@@ -19,4 +19,16 @@ TransactionRouter.get(
   TransactionController.adminGetTransactionById
 );
 
+TransactionRouter.get(
+  "/mine",
+  AuthMiddleware.protect,
+  TransactionController.getUserTransactions
+);
+
+TransactionRouter.get(
+  "/meter/:meterId",
+  AuthMiddleware.protect,
+  TransactionController.getMeterTransactions
+);
+
 export default TransactionRouter;

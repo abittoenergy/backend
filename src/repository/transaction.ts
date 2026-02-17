@@ -209,4 +209,99 @@ export class TransactionRepository {
       totalFailedTransactions: Number(totalFailed),
     };
   }
+
+  async findAllByUser(userId: string, options: AdminTransactionQueryOptions = {}) {
+    const page = options.page || 1;
+    const limit = options.limit || 20;
+    const offset = (page - 1) * limit;
+
+    const conditions = [eq(transactions.userId, userId)];
+
+    if (options.status) {
+      conditions.push(eq(transactions.status, options.status as any));
+    }
+
+    if (options.type) {
+      conditions.push(eq(transactions.type, options.type as any));
+    }
+
+    if (options.startDate) {
+      conditions.push(gte(transactions.createdAt, new Date(options.startDate)));
+    }
+
+    if (options.endDate) {
+      conditions.push(lte(transactions.createdAt, new Date(options.endDate)));
+    }
+
+    const whereClause = and(...conditions);
+
+    const results = await this.db
+      .select()
+      .from(transactions)
+      .where(whereClause)
+      .limit(limit)
+      .offset(offset)
+      .orderBy(desc(transactions.createdAt));
+
+    const [{ count }] = await this.db
+      .select({ count: sql<number>`count(*)` })
+      .from(transactions)
+      .where(whereClause);
+
+    return {
+      results,
+      total: Number(count),
+      page,
+      limit,
+    };
+  }
+
+  async findAllByMeter(userId: string, meterId: string, options: AdminTransactionQueryOptions = {}) {
+    const page = options.page || 1;
+    const limit = options.limit || 20;
+    const offset = (page - 1) * limit;
+
+    const conditions = [
+      eq(transactions.userId, userId),
+      sql`${transactions.metadata}->>'meterId' = ${meterId}`
+    ];
+
+    if (options.status) {
+      conditions.push(eq(transactions.status, options.status as any));
+    }
+
+    if (options.type) {
+      conditions.push(eq(transactions.type, options.type as any));
+    }
+
+    if (options.startDate) {
+      conditions.push(gte(transactions.createdAt, new Date(options.startDate)));
+    }
+
+    if (options.endDate) {
+      conditions.push(lte(transactions.createdAt, new Date(options.endDate)));
+    }
+
+    const whereClause = and(...conditions);
+
+    const results = await this.db
+      .select()
+      .from(transactions)
+      .where(whereClause)
+      .limit(limit)
+      .offset(offset)
+      .orderBy(desc(transactions.createdAt));
+
+    const [{ count }] = await this.db
+      .select({ count: sql<number>`count(*)` })
+      .from(transactions)
+      .where(whereClause);
+
+    return {
+      results,
+      total: Number(count),
+      page,
+      limit,
+    };
+  }
 }

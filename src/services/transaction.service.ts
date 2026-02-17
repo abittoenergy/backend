@@ -38,4 +38,38 @@ export default class TransactionService {
       user: result.user,
     };
   }
+
+  static async getUserTransactions(userId: string, query: AdminTransactionQueryOptions) {
+    const { results, total } = await this.transactionRepo.findAllByUser(userId, query);
+
+    return {
+      transactions: results.map(tx => ({
+        ...tx,
+        amount: tx.amount.toString(),
+      })),
+      pagination: {
+        total,
+        page: query.page || 1,
+        limit: query.limit || 20,
+        totalPages: Math.ceil(total / (query.limit || 20)),
+      },
+    };
+  }
+
+  static async getMeterTransactions(userId: string, meterId: string, query: AdminTransactionQueryOptions) {
+    const { results, total } = await this.transactionRepo.findAllByMeter(userId, meterId, query);
+
+    return {
+      transactions: results.map(tx => ({
+        ...tx,
+        amount: tx.amount.toString(),
+      })),
+      pagination: {
+        total,
+        page: query.page || 1,
+        limit: query.limit || 20,
+        totalPages: Math.ceil(total / (query.limit || 20)),
+      },
+    };
+  }
 }

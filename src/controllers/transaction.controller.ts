@@ -36,4 +36,44 @@ export default class TransactionController {
       data,
     });
   });
+
+  static getUserTransactions = ControllerHelper.createHandler("get-user-transactions", async (req: Request, res: Response, next: NextFunction) => {
+    const userId = (req as any).user.id;
+    const validation = TransactionValidator.validateGetUserTransactionsQuery(req.query);
+
+    if (!validation.success) {
+      const message = validation.error.errors?.[0]?.message || "Validation failed";
+      return next(new AppError(message, ResponseHelper.BAD_REQUEST));
+    }
+
+    const data = await TransactionService.getUserTransactions(userId, validation.data as any);
+
+    ResponseHelper.sendSuccessResponse(res, {
+      message: "Transactions retrieved successfully",
+      data,
+    });
+  });
+
+  static getMeterTransactions = ControllerHelper.createHandler("get-meter-transactions", async (req: Request, res: Response, next: NextFunction) => {
+    const userId = (req as any).user.id;
+    const { meterId } = req.params;
+
+    if (!meterId) {
+      return next(new AppError("Meter ID is required", ResponseHelper.BAD_REQUEST));
+    }
+
+    const validation = TransactionValidator.validateGetUserTransactionsQuery(req.query);
+
+    if (!validation.success) {
+      const message = validation.error.errors?.[0]?.message || "Validation failed";
+      return next(new AppError(message, ResponseHelper.BAD_REQUEST));
+    }
+
+    const data = await TransactionService.getMeterTransactions(userId, meterId, validation.data as any);
+
+    ResponseHelper.sendSuccessResponse(res, {
+      message: "Meter transactions retrieved successfully",
+      data,
+    });
+  });
 }
