@@ -12,6 +12,8 @@ import EmailService from "./email.service";
 import envConfig from "../config/env";
 import { UserRepository } from "../repository/user";
 import { GasUsageAuditRepository } from "../repository/gas-usage-audit.repo";
+import { getDb, DbClient } from "../config/db";
+import { WalletRepository } from "../repository/wallet";
 
 export default class GasPurchaseService {
   private static gasPurchaseRepo = new GasPurchaseRepository();
@@ -19,7 +21,7 @@ export default class GasPurchaseService {
   private static settingsRepo = new SystemSettingsRepository();
   private static userRepo = new UserRepository();
   private static gasUsageAuditRepo = new GasUsageAuditRepository();
-
+  private static walletRepo = new WalletRepository();
   /**
    * Initialize online gas purchase
    * Creates transaction and purchase record, returns Paystack payment URL
@@ -129,6 +131,126 @@ export default class GasPurchaseService {
   }
 
   /**
+   * Purchase gas from wallet balance
+   */
+  static async purchaseGasFromWallet(
+    userId: string,
+    meterId: string,
+    amount: number
+  ): Promise<{ kgPurchased: number; newBalance: number }> {
+    // 1. Validate amount
+    if (amount <= 0) {
+      throw new AppError("Amount must be greater than zero", ResponseHelper.BAD_REQUEST);
+    }
+
+    // 2. Verify meter ownership
+    const meter = await MeterRepo.findById(meterId);
+    if (!meter) {
+      throw new AppError("Meter not found", ResponseHelper.RESOURCE_NOT_FOUND);
+    }
+
+    if (meter.userId !== userId) {
+      throw new AppError(
+        "You do not have permission to purchase gas for this meter",
+        ResponseHelper.FORBIDDEN
+      );
+    }
+
+    // 3. Get gas price from settings
+    const settings = await this.settingsRepo.getSettings();
+    if (!settings || !settings?.gasPricePerKg) {
+      throw new AppError(
+        "Gas price not configured. Please contact support.",
+        ResponseHelper.INTERNAL_SERVER_ERROR
+      );
+    }
+
+    const gasPricePerKg = parseFloat(settings.gasPricePerKg);
+    if (amount < gasPricePerKg) {
+      throw new AppError(`Minimum gas purchase amount is ${gasPricePerKg}/kg`, ResponseHelper.BAD_REQUEST);
+    }
+
+    const kgPurchased = amount / gasPricePerKg;
+    const amountInKobo = Math.round(amount * 100);
+
+    const db = getDb();
+
+    return await db.transaction(async (tx: DbClient) => {
+    
+      const transactionRepo = new TransactionRepository(tx);
+      const gasPurchaseRepo = new GasPurchaseRepository(tx);
+      const userRepo = new UserRepository(tx);
+
+      // 4. Verify wallet balance
+      const wallet = await this.walletRepo.findByUserId(userId);
+      if (!wallet) {
+        throw new AppError("Wallet not found", ResponseHelper.RESOURCE_NOT_FOUND);
+      }
+
+      if (Number(wallet.balance) < amountInKobo) {
+        throw new AppError("Insufficient wallet balance", ResponseHelper.BAD_REQUEST);
+      }
+
+      // 5. Deduct from wallet
+      const updatedWallet = await this.walletRepo.updateBalance(wallet.id, Number(wallet.balance) - amountInKobo);
+      if (!updatedWallet) throw new Error("Failed to update wallet balance");
+
+      // 6. Create success transaction
+      const transaction = await transactionRepo.create({
+        userId,
+        walletId: wallet.id,
+        amount: amountInKobo,
+        type: "GAS_PURCHASE_WALLET",
+        status: "SUCCESS",
+        description: `Gas purchase from wallet for meter ${meter.meterNumber || meter.deviceId}`,
+        metadata: {
+          meterId,
+          kgPurchased: kgPurchased.toFixed(3),
+          gasPricePerKg: gasPricePerKg.toFixed(2),
+        },
+      });
+
+      // 7. Create completed gas purchase record
+      const purchase = await gasPurchaseRepo.create({
+        userId,
+        meterId,
+        transactionId: transaction.id,
+        amountPaid: amountInKobo,
+        gasPricePerKg: gasPricePerKg.toFixed(2),
+        kgPurchased: kgPurchased.toFixed(3),
+        status: GasPurchaseStatus.COMPLETED,
+        refillCompletedAt: new Date(),
+        kgDispensed: kgPurchased.toFixed(3),
+      });
+
+      // 8. Update user's availableGasKg
+      const newGasBalance = await userRepo.updateGasBalance(userId, kgPurchased);
+
+      // Post-transaction notifications
+      this.sendPurchaseNotificationToDevice(purchase.id, newGasBalance).catch((err) => {
+        logger.error("Failed to send device notification for wallet purchase", { error: err.message, purchaseId: purchase.id });
+      });
+
+      this.sendPurchaseSuccessEmail(purchase.id, newGasBalance).catch((err) => {
+        logger.error("Failed to send email for wallet purchase", { error: err.message, purchaseId: purchase.id });
+      });
+
+      logger.info(`Gas purchase from wallet successful`, {
+        userId,
+        meterId,
+        amount,
+        kgPurchased: kgPurchased.toFixed(3),
+        newGasBalance,
+      });
+
+      return {
+        kgPurchased: parseFloat(kgPurchased.toFixed(3)),
+        newBalance: newGasBalance,
+      };
+    });
+  }
+
+  /**
    * Process successful payment from webhook
    * Updates transaction and triggers MQTT dispense command
    */
@@ -185,124 +307,6 @@ export default class GasPurchaseService {
     }
   }
 
-  /**
-   * Send MQTT command to meter to dispense gas
-   */
-  static async sendDispenseCommand(purchaseId: string): Promise<void> {
-    try {
-      const purchase = await this.gasPurchaseRepo.findById(purchaseId);
-
-      if (!purchase) {
-        throw new AppError("Purchase not found", ResponseHelper.RESOURCE_NOT_FOUND);
-      }
-
-      // Get meter details
-      const meter = await MeterRepo.findById(purchase.meterId);
-
-      if (!meter) {
-        throw new AppError("Meter not found", ResponseHelper.RESOURCE_NOT_FOUND);
-      }
-
-      // Generate command ID
-      const commandId = `dispense_${purchaseId}_${Date.now()}`;
-
-      // Send MQTT command
-      mqttService.sendCommand(meter.deviceId, {
-        commandId,
-        action: "DISPENSE_GAS",
-        params: {
-          kgAmount: parseFloat(purchase.kgPurchased),
-          purchaseId: purchase.id,
-          openValve: true,
-        },
-      });
-
-      // Mark command as sent
-      await this.gasPurchaseRepo.markMqttCommandSent(purchaseId, commandId);
-
-      logger.info(`MQTT dispense command sent`, {
-        purchaseId,
-        deviceId: meter.deviceId,
-        commandId,
-        kgAmount: purchase.kgPurchased,
-      });
-    } catch (error: any) {
-      // Mark purchase as failed
-      await this.gasPurchaseRepo.markFailed(
-        purchaseId,
-        `Failed to send MQTT command: ${error.message}`
-      );
-
-      logger.error("Failed to send dispense command", {
-        error: error.message,
-        stack: error.stack,
-        purchaseId,
-      });
-      throw error;
-    }
-  }
-
-  /**
-   * Handle refill started confirmation from meter
-   */
-  static async handleRefillStarted(deviceId: string, commandId: string): Promise<void> {
-    try {
-      const purchase = await this.gasPurchaseRepo.findByMqttCommandId(commandId);
-
-      if (!purchase) {
-        logger.warn(`Purchase not found for MQTT command: ${commandId}`);
-        return;
-      }
-
-      await this.gasPurchaseRepo.markRefillStarted(purchase.id);
-
-      logger.info(`Refill started`, {
-        purchaseId: purchase.id,
-        deviceId,
-        commandId,
-      });
-    } catch (error: any) {
-      logger.error("Failed to handle refill started", {
-        error: error.message,
-        deviceId,
-        commandId,
-      });
-    }
-  }
-
-  /**
-   * Handle refill completed confirmation from meter
-   */
-  static async handleRefillCompleted(
-    deviceId: string,
-    commandId: string,
-    kgDispensed: number
-  ): Promise<void> {
-    try {
-      const purchase = await this.gasPurchaseRepo.findByMqttCommandId(commandId);
-
-      if (!purchase) {
-        logger.warn(`Purchase not found for MQTT command: ${commandId}`);
-        return;
-      }
-
-      await this.gasPurchaseRepo.markRefillCompleted(purchase.id, kgDispensed.toFixed(3));
-
-      logger.info(`Refill completed`, {
-        purchaseId: purchase.id,
-        deviceId,
-        commandId,
-        kgPurchased: purchase.kgPurchased,
-        kgDispensed: kgDispensed.toFixed(3),
-      });
-    } catch (error: any) {
-      logger.error("Failed to handle refill completed", {
-        error: error.message,
-        deviceId,
-        commandId,
-      });
-    }
-  }
 
   /**
    * Handle gas usage report from IoT device
@@ -318,8 +322,20 @@ export default class GasPurchaseService {
       const userRepo = new UserRepository();
       const user = await userRepo.findById(meter.userId);
       if (!user) return;
-
       const previousBalance = parseFloat(user.availableGasKg);
+      // if (previousBalance === 0){
+      //   // send admin email notification
+      //   EmailService.sendAdminAbnormalGasUsageNotification(user.id, meter.id, kgUsed);
+
+      //   logger.warn(`Usage reported for meter with zero balance: ${deviceId}`,{
+      //     deviceId,
+      //     userId: meter.userId,
+      //     kgUsed,
+      //   });
+
+      // }
+
+
       const newBalance = await userRepo.updateGasBalance(meter.userId, -kgUsed);
 
 

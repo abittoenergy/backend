@@ -2,18 +2,22 @@ import ControllerHelper from "../utils/helpers/controller.helper";
 import ResponseHelper from "../utils/helpers/response.helper";
 import GasPurchaseService from "../services/gas-purchase.service";
 import AppError from "../utils/appError";
+import GasPurchaseValidator from "../validators/gas-purchase.validator";
 
 export default class GasPurchaseController {
 
   static initializePurchase = ControllerHelper.createHandler(
     "gas-purchase.initialize",
     async (req, res, next) => {
-      const { meterId, amount } = req.body;
-      const userId = (req as any).user.id;
+      const validation = GasPurchaseValidator.initializeGasPurchase(req.body);
 
-      if (!meterId || !amount) {
-        return next(new AppError("Meter ID and amount are required", ResponseHelper.BAD_REQUEST));
+      if (!validation.success) {
+        const error = validation.error.errors[0]?.message || "Invalid input";
+        return next(new AppError(error, ResponseHelper.BAD_REQUEST));
       }
+
+      const { meterId, amount } = validation.data;
+      const userId = (req as any).user.id;
 
       const result = await GasPurchaseService.initializeOnlinePurchase(userId, meterId, amount);
 
@@ -39,6 +43,28 @@ export default class GasPurchaseController {
       ResponseHelper.sendSuccessResponse(res, {
         message: "Payment status retrieved successfully",
         data: status,
+      });
+    }
+  );
+
+  static purchaseFromWallet = ControllerHelper.createHandler(
+    "gas-purchase.purchase-from-wallet",
+    async (req, res, next) => {
+      const validation = GasPurchaseValidator.initializeGasPurchase(req.body);
+
+      if (!validation.success) {
+        const error = validation.error.errors[0]?.message || "Invalid input";
+        return next(new AppError(error, ResponseHelper.BAD_REQUEST));
+      }
+
+      const { meterId, amount } = validation.data;
+      const userId = (req as any).user.id;
+
+      const result = await GasPurchaseService.purchaseGasFromWallet(userId, meterId, amount);
+
+      ResponseHelper.sendSuccessResponse(res, {
+        message: "Gas purchase from wallet successful",
+        data: result,
       });
     }
   );

@@ -2,6 +2,7 @@ import { eq, or, ilike, and, sql, desc, gte, getTableColumns, isNull, isNotNull 
 import { getDb } from "../config/db";
 import { users, User, NewUser } from "../db/schema/users.schema";
 import { meters, gasPurchases, GasPurchaseStatus } from "../db/schema";
+import { DbClient } from "../config/db";
 
 export interface AdminUserQueryOptions {
     page?: number;
@@ -12,7 +13,11 @@ export interface AdminUserQueryOptions {
 
 export class UserRepository {
 
-    private db = getDb();
+    private db: DbClient;
+
+    constructor(db?: DbClient) {
+        this.db = db || getDb();
+    }
 
     get client() {
         return this.db;

@@ -8,6 +8,7 @@ const GasPurchaseRouter = express.Router();
 GasPurchaseRouter.use(AuthMiddleware.protect);
 
 GasPurchaseRouter.post("/initialize", gasPurchaseLimiter, GasPurchaseController.initializePurchase);
+GasPurchaseRouter.post("/wallet-purchase", gasPurchaseLimiter, GasPurchaseController.purchaseFromWallet);
 
 GasPurchaseRouter.get("/status/:reference", gasPurchaseLimiter, GasPurchaseController.checkPaymentStatus);
 
