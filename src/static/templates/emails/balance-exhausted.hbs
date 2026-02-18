@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .container {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 40px;
+            background-color: #ffffff;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h2 {
+            color: #d9534f;
+            margin: 0;
+        }
+        .content {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #333333;
+        }
+        .alert-badge {
+            background-color: #d9534f;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-block;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .info-box {
+            background-color: #f4f7f6;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #666;
+        }
+        .info-value {
+            color: #333;
+        }
+        .highlight {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+        .button-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .button {
+            background-color: #3266CC;
+            color: #ffffff;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .footer {
+            margin-top: 40px;
+            font-size: 12px;
+            color: #999999;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <img src="{{logoUrl}}" alt="Abittoenergy Logo" style="max-width: 200px; height: auto;" />
+        </div>
+        <div class="header">
+            <h2>Gas Balance Exhausted! ⚠️</h2>
+        </div>
+        <div class="content">
+            <p>Hello {{firstName}},</p>
+            
+            <div style="text-align: center;">
+                <span class="alert-badge">! Action Required</span>
+            </div>
+            
+            <p>We are writing to inform you that the gas balance for your meter has been exhausted. As a result, the valve on your meter has been automatically closed to prevent any further usage until a refill is made.</p>
+            
+            <div class="info-box">
+                <p><strong>Meter Information:</strong></p>
+                <div class="info-row">
+                    <span class="info-label">Meter Number:</span>
+                    <span class="info-value">{{meterNumber}}</span>
+                </div>
+                {{#if estateName}}
+                <div class="info-row">
+                    <span class="info-label">Location:</span>
+                    <span class="info-value">{{estateName}}{{#if houseNumber}}, House {{houseNumber}}{{/if}}</span>
+                </div>
+                {{/if}}
+            </div>
+
+            <div class="highlight">
+                <p><strong>What should you do?</strong></p>
+                <p>To resume gas flow, please purchase additional gas units via your dashboard. Once the purchase is confirmed, the valve will be reopened according to your new balance.</p>
+            </div>
+            
+            <div class="button-container">
+                <a href="{{buyGasUrl}}" class="button" style="color:#ffffff; background-color: #669900;">Buy Gas Now</a>
+            </div>
+            
+            <p>You can monitor your real-time usage and manage all your meters by logging into your Abittoenergy dashboard.</p>
+            
+            <p>Thank you for choosing Abittoenergy!</p>
+            
+            <p>Best regards,<br>The Abittoenergy Team</p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2026 Abittoenergy. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

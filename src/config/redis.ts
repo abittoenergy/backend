@@ -71,7 +71,7 @@ export default class RedisManager {
             );
 
             this.client = new RedisClient(envConfig.redis.url, {
-                maxRetriesPerRequest: 3,
+                maxRetriesPerRequest: null,
                 enableReadyCheck: true,
                 lazyConnect: true,
                 keepAlive: 30000,

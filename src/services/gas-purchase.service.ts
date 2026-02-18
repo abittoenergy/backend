@@ -15,6 +15,7 @@ import { GasUsageAuditRepository } from "../repository/gas-usage-audit.repo";
 import { getDb, DbClient } from "../config/db";
 import { WalletRepository } from "../repository/wallet";
 import MeterService from "./meter.service";
+import NotificationService from "./notification.service";
 
 export default class GasPurchaseService {
   private static gasPurchaseRepo = new GasPurchaseRepository();
@@ -355,14 +356,9 @@ export default class GasPurchaseService {
 
       if (newBalance <= 0) {
         await MeterService.closeValve(deviceId);
-
-        // Notify user
-        const NotificationService = (await import("./notification.service")).default;
-        await NotificationService.createNotification(meter.userId, {
-          title: "Gas Balance Exhausted",
-          description: `The valve on meter ${meter.meterNumber || meter.deviceId} has been closed because your gas balance is exhausted. Please refill to continue usage.`,
-          category: "GAS_PURCHASE",
-        }).catch(err => logger.error("Failed to notify user of exhausted balance:", err));
+        await this.sendExhaustedBalanceNotification(meter.id).catch((err) =>
+          logger.error("Failed to send exhausted balance notification:", err)
+        );
       }
 
       logger.info(`Gas usage processed and audited`, {
@@ -584,6 +580,51 @@ export default class GasPurchaseService {
         purchaseId,
       });
       // Don't throw - email failure shouldn't break the purchase flow
+    }
+  }
+
+  /**
+   * Send notification and email when gas balance is exhausted
+   * @private
+   */
+  private static async sendExhaustedBalanceNotification(meterId: string): Promise<void> {
+    try {
+      const meter = await MeterRepo.findById(meterId);
+      if (!meter || !meter.userId) return;
+
+      const user = await this.userRepo.findById(meter.userId);
+      if (!user) return;
+
+      await NotificationService.createNotification(user.id, {
+        title: "Gas Balance Exhausted",
+        description: `The valve on meter ${meter.meterNumber || meter.deviceId} has been closed because your gas balance is exhausted. Please refill to continue usage.`,
+        category: "GAS_PURCHASE",
+      });
+
+      if (user.email) {
+        await EmailService.sendEmail({
+          to: user.email,
+          subject: `Urgent: Gas Balance Exhausted - Valve Closed`,
+          template: "balance-exhausted",
+          context: {
+            firstName: user.firstName || "Valued Customer",
+            meterNumber: meter.meterNumber || meter.deviceId,
+            estateName: meter.estateName,
+            houseNumber: meter.houseNumber,
+            buyGasUrl: `${envConfig.app.url}/gas-purchase`,
+          },
+        });
+      }
+
+      logger.info(`Exhausted balance notifications sent for meter ${meterId}`, {
+        userId: user.id,
+        email: user.email,
+      });
+    } catch (error: any) {
+      logger.error("Error sending exhausted balance notification", {
+        error: error.message,
+        meterId,
+      });
     }
   }
 
