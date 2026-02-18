@@ -216,4 +216,20 @@ export default class MeterController {
       data,
     });
   });
+
+  static getMeterStats = ControllerHelper.createHandler("get-meter-stats", async (req, res, next) => {
+    const { id: userId } = (req as any).user;
+    const { id } = req.params;
+
+    if (!id) {
+      return next(new AppError("meter id is required", ResponseHelper.BAD_REQUEST));
+    }
+
+    const data = await MeterService.getMeterStats(id, userId);
+
+    ResponseHelper.sendSuccessResponse(res, {
+      message: "Meter statistics retrieved successfully",
+      data,
+    });
+  });
 }

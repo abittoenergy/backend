@@ -10,6 +10,7 @@ import EmailService from "./email.service";
 import envConfig from "../config/env";
 import { UserRepository } from "../repository/user";
 import { EstateRepo } from "../repository/estate";
+import { GasUsageAuditRepository } from "../repository/gas-usage-audit.repo";
 import logger from "../config/logger";
 import NotificationService from "./notification.service";
 import mqttService from "./mqtt.service";
@@ -72,6 +73,7 @@ export default class MeterService {
 
   private static meterLinkRequestRepo = new MeterLinkRequestRepo();
   private static userRepo = new UserRepository();
+  private static auditRepo = new GasUsageAuditRepository();
 
   private static estateRepo = new EstateRepo();
 
@@ -428,5 +430,72 @@ export default class MeterService {
     }
 
     return meter;
+  }
+
+  static async closeValve(deviceId: string) {
+    try {
+      // Send MQTT command
+      mqttService.sendCommand(deviceId, {
+        commandId: `valve_close_${Date.now()}`,
+        action: "VALVE_CONTROL",
+        params: {
+          valveStatus: 0,
+        },
+      });
+
+      // Update database
+      await MeterRepo.updateValveStatus(deviceId, false);
+      logger.info(`Valve automatically closed for meter ${deviceId} due to zero balance`);
+    } catch (error: any) {
+      logger.error(`Failed to automatically close valve for ${deviceId}:`, error);
+    }
+  }
+
+  static async getMeterStats(meterId: string, userId: string) {
+    const meter = await MeterRepo.findById(meterId);
+    if (!meter) {
+      throw new AppError("Meter not found", ResponseHelper.RESOURCE_NOT_FOUND);
+    }
+
+    if (meter.userId !== userId) {
+      throw new AppError("You do not have permission to view stats for this meter", ResponseHelper.FORBIDDEN);
+    }
+
+    const user = await this.userRepo.findById(userId);
+    if (!user) {
+      throw new AppError("User not found", ResponseHelper.RESOURCE_NOT_FOUND);
+    }
+
+    const now = new Date();
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const fourteenDaysAgo = new Date(now);
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+    const [usedToday, usedThisWeek, usedLastWeek, weeklyGraphData] = await Promise.all([
+      this.auditRepo.getUsageStats(meterId, startOfToday, now),
+      this.auditRepo.getUsageStats(meterId, sevenDaysAgo, now),
+      this.auditRepo.getUsageStats(meterId, fourteenDaysAgo, sevenDaysAgo),
+      this.auditRepo.getDailyUsageBreakdown(meterId, 7),
+    ]);
+
+    let weeklyChangePercentage = 0;
+    if (usedLastWeek > 0) {
+      weeklyChangePercentage = ((usedThisWeek - usedLastWeek) / usedLastWeek) * 100;
+    } else if (usedThisWeek > 0) {
+      weeklyChangePercentage = 100;
+    }
+
+    return {
+      remainingKg: parseFloat(meter.availableGasKg || "0"),
+      usedToday,
+      usedThisWeek,
+      weeklyChangePercentage: parseFloat(weeklyChangePercentage.toFixed(2)),
+      weeklyGraphData,
+    };
   }
 }

@@ -14,6 +14,7 @@ import { UserRepository } from "../repository/user";
 import { GasUsageAuditRepository } from "../repository/gas-usage-audit.repo";
 import { getDb, DbClient } from "../config/db";
 import { WalletRepository } from "../repository/wallet";
+import MeterService from "./meter.service";
 
 export default class GasPurchaseService {
   private static gasPurchaseRepo = new GasPurchaseRepository();
@@ -176,7 +177,7 @@ export default class GasPurchaseService {
     const db = getDb();
 
     return await db.transaction(async (tx: DbClient) => {
-    
+
       const transactionRepo = new TransactionRepository(tx);
       const gasPurchaseRepo = new GasPurchaseRepository(tx);
       const userRepo = new UserRepository(tx);
@@ -223,8 +224,8 @@ export default class GasPurchaseService {
         kgDispensed: kgPurchased.toFixed(3),
       });
 
-      // 8. Update user's availableGasKg
-      const newGasBalance = await userRepo.updateGasBalance(userId, kgPurchased);
+      // 8. Update meter's availableGasKg
+      const newGasBalance = await MeterRepo.updateGasBalance(meterId, kgPurchased, tx);
 
       // Post-transaction notifications
       this.sendPurchaseNotificationToDevice(purchase.id, newGasBalance).catch((err) => {
@@ -270,11 +271,10 @@ export default class GasPurchaseService {
         return;
       }
 
-      const newBalance = await this.userRepo.updateGasBalance(purchase.userId, parseFloat(purchase.kgPurchased));
+      const newBalance = await MeterRepo.updateGasBalance(purchase.meterId, parseFloat(purchase.kgPurchased));
 
       await this.gasPurchaseRepo.markRefillCompleted(purchase.id, purchase.kgPurchased);
 
-      // Notify device about successful purchase
       this.sendPurchaseNotificationToDevice(purchase.id, newBalance).catch((error) => {
         logger.error("Failed to send gas purchase notification to device", {
           error: error.message,
@@ -319,35 +319,51 @@ export default class GasPurchaseService {
         return;
       }
 
-      const userRepo = new UserRepository();
-      const user = await userRepo.findById(meter.userId);
-      if (!user) return;
-      const previousBalance = parseFloat(user.availableGasKg);
-      // if (previousBalance === 0){
-      //   // send admin email notification
-      //   EmailService.sendAdminAbnormalGasUsageNotification(user.id, meter.id, kgUsed);
+      const previousBalance = parseFloat(meter.availableGasKg || "0");
+      let actualKgUsed = kgUsed;
 
-      //   logger.warn(`Usage reported for meter with zero balance: ${deviceId}`,{
-      //     deviceId,
-      //     userId: meter.userId,
-      //     kgUsed,
-      //   });
+      if (previousBalance <= 0) {
+        logger.warn(`Usage reported for meter with zero/negative balance: ${deviceId}`, {
+          deviceId,
+          previousBalance,
+          kgUsed,
+        });
+        await MeterService.closeValve(deviceId);
+        return;
+      }
 
-      // }
+      if (kgUsed > previousBalance) {
+        logger.warn(`Usage exceeds balance for meter ${deviceId}. Capping usage.`, {
+          deviceId,
+          previousBalance,
+          kgUsed,
+        });
+        actualKgUsed = previousBalance;
+      }
 
-
-      const newBalance = await userRepo.updateGasBalance(meter.userId, -kgUsed);
-
+      const newBalance = await MeterRepo.updateGasBalance(meter.id, -actualKgUsed);
 
       await this.gasUsageAuditRepo.create({
         userId: meter.userId,
         meterId: meter.id,
         deviceId: deviceId,
-        kgUsed: kgUsed.toFixed(3),
+        kgUsed: actualKgUsed.toFixed(3),
         previousBalance: previousBalance.toFixed(3),
         newBalance: newBalance.toFixed(3),
-        metadata: { timestamp: new Date() },
+        metadata: { timestamp: new Date(), requestedUsage: kgUsed.toFixed(3) },
       });
+
+      if (newBalance <= 0) {
+        await MeterService.closeValve(deviceId);
+
+        // Notify user
+        const NotificationService = (await import("./notification.service")).default;
+        await NotificationService.createNotification(meter.userId, {
+          title: "Gas Balance Exhausted",
+          description: `The valve on meter ${meter.meterNumber || meter.deviceId} has been closed because your gas balance is exhausted. Please refill to continue usage.`,
+          category: "GAS_PURCHASE",
+        }).catch(err => logger.error("Failed to notify user of exhausted balance:", err));
+      }
 
       logger.info(`Gas usage processed and audited`, {
         deviceId,
@@ -381,7 +397,7 @@ export default class GasPurchaseService {
 
       if (!user) return;
 
-      const availableBalance = parseFloat(user.availableGasKg);
+      const availableBalance = parseFloat(meter.availableGasKg || "0");
 
       // Send MQTT response
       mqttService.sendCommand(deviceId, {
@@ -460,8 +476,7 @@ export default class GasPurchaseService {
 
       let balance = newBalance;
       if (balance === undefined) {
-        const user = await this.userRepo.findById(purchase.userId);
-        balance = user ? parseFloat(user.availableGasKg) : 0;
+        balance = parseFloat(meter.availableGasKg || "0");
       }
 
       // Send MQTT command
@@ -531,7 +546,7 @@ export default class GasPurchaseService {
           firstName: user.firstName || "Valued Customer",
           amountPaid: amountInNaira,
           kgPurchased: purchase.kgPurchased,
-          newBalance: newBalance?.toFixed(3) || parseFloat(user.availableGasKg).toFixed(3),
+          newBalance: newBalance?.toFixed(3) || parseFloat(meter.availableGasKg || "0").toFixed(3),
           gasPricePerKg: parseFloat(purchase.gasPricePerKg).toLocaleString("en-NG", {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
@@ -553,7 +568,7 @@ export default class GasPurchaseService {
       const NotificationService = (await import("./notification.service")).default;
       await NotificationService.createNotification(purchase.userId, {
         title: "Gas Purchase Successful",
-        description: `${purchase.kgPurchased} kg of gas has been added to your available balance. New balance: ${newBalance?.toFixed(3) || parseFloat(user.availableGasKg).toFixed(3)} kg.`,
+        description: `${purchase.kgPurchased} kg of gas has been added to your available balance. New balance: ${newBalance?.toFixed(3) || parseFloat(meter.availableGasKg || "0").toFixed(3)} kg.`,
         category: "GAS_PURCHASE",
       });
 
@@ -622,7 +637,7 @@ export default class GasPurchaseService {
         purchaseStatus: purchase.status,
         amount: transaction.amount,
         kgPurchased: purchase.kgPurchased,
-        availableGasKg: user ? parseFloat(user.availableGasKg) : null,
+        availableGasKg: meter ? parseFloat(meter.availableGasKg || "0") : null,
         meterNumber: meter?.meterNumber || meter?.deviceId,
         createdAt: purchase.createdAt,
       };

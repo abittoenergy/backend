@@ -6,6 +6,7 @@ import {
   timestamp,
   text,
   index,
+  numeric,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { users } from "./users.schema";
@@ -32,6 +33,7 @@ export const meters = pgTable(
     estateId: uuid("estate_id").references(() => estate.id, { onDelete: "set null" }),
     houseNumber: varchar("house_number", { length: 20 }),
     estateName: text("estate_name"),
+    availableGasKg: numeric("available_gas_kg", { precision: 10, scale: 3 }).default("0").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

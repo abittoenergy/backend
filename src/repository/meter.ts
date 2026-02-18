@@ -161,4 +161,18 @@ export const MeterRepo = {
       .returning();
     return result;
   },
+
+  async updateGasBalance(meterId: string, amountKg: number, dbInstance?: any): Promise<number> {
+    const client = dbInstance || db;
+    const [result] = await client
+      .update(meters)
+      .set({
+        availableGasKg: sql`${meters.availableGasKg} + ${amountKg}`,
+        updatedAt: new Date(),
+      })
+      .where(eq(meters.id, meterId))
+      .returning({ availableGasKg: meters.availableGasKg });
+
+    return parseFloat(result.availableGasKg);
+  },
 };

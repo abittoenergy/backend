@@ -68,7 +68,6 @@ export const users = pgTable(
         houseNumber: varchar("house_number", { length: 20 }),
         onboardingEstateName: text("onboarding_estate_name"),
         onboardingCompleted: boolean("onboarding_completed").notNull().default(false),
-        availableGasKg: numeric("available_gas_kg", { precision: 10, scale: 3 }).default('0').notNull(),
     },
     (t) => [
         uniqueIndex("users_email_lower_unique").on(sql`lower(${t.email})`),
