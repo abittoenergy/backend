@@ -12,6 +12,7 @@ import { UserRepository } from "../repository/user";
 import { EstateRepo } from "../repository/estate";
 import logger from "../config/logger";
 import NotificationService from "./notification.service";
+import mqttService from "./mqtt.service";
 
 export default class MeterService {
 
@@ -389,5 +390,43 @@ export default class MeterService {
     } catch (error: any) {
       logger.error(`Failed to handle valve status update for ${deviceId}:`, error);
     }
+  }
+
+  static async toggleValve(meterId: string, userId: string) {
+    const meter = await MeterRepo.findById(meterId);
+    if (!meter) {
+      throw new AppError("Meter not found", ResponseHelper.RESOURCE_NOT_FOUND);
+    }
+
+    if (meter.userId !== userId) {
+      throw new AppError("You do not have permission to control this meter", ResponseHelper.FORBIDDEN);
+    }
+
+    const newValveStatus = !meter.valveStatus;
+
+    mqttService.sendCommand(meter.deviceId, {
+      commandId: `valve_control_${Date.now()}`,
+      action: "VALVE_CONTROL",
+      params: {
+        valveStatus: newValveStatus ? 1 : 0,
+      },
+    });
+
+    const updatedMeter = await MeterRepo.updateValveStatus(meter.deviceId, newValveStatus);
+
+    return updatedMeter;
+  }
+
+  static async getMeterDetails(meterId: string, userId: string) {
+    const meter = await MeterRepo.findById(meterId);
+    if (!meter) {
+      throw new AppError("Meter not found", ResponseHelper.RESOURCE_NOT_FOUND);
+    }
+
+    if (meter.userId !== userId) {
+      throw new AppError("You do not have permission to view this meter", ResponseHelper.FORBIDDEN);
+    }
+
+    return meter;
   }
 }

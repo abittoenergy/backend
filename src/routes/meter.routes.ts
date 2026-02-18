@@ -17,8 +17,10 @@ MeterRouter.get("/registration/:meterNumber", meterRateLimiter, MeterController.
 
 // USER
 MeterRouter.get("/", meterRateLimiter, AuthMiddleware.protect, MeterController.getUsersMeters);
+MeterRouter.get("/details/:id", meterRateLimiter, AuthMiddleware.protect, MeterController.getMeterDetails);
 MeterRouter.get("/link/:meterNumber", meterRateLimiter, AuthMiddleware.protect, MeterController.checkMeterRegistration);
 MeterRouter.post("/link/:meterNumber", meterRateLimiter, AuthMiddleware.protect, MeterController.requestMeterLink);
+MeterRouter.post("/:id/toggle-valve", meterRateLimiter, AuthMiddleware.protect, MeterController.toggleValve);
 
 // ADMIN
 MeterRouter.patch("/link-requests/:id", meterRateLimiter, AuthMiddleware.protect, AuthMiddleware.restrictTo("admin", "super-admin"), MeterController.processMeterLinkRequest);

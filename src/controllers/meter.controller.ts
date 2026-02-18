@@ -182,4 +182,38 @@ export default class MeterController {
     });
   });
 
+  static toggleValve = ControllerHelper.createHandler("toggle-meter-valve", async (req, res, next) => {
+    const { id: userId } = (req as any).user;
+    const { id } = req.params;
+
+    if (!id) {
+      return next(new AppError("meter id is required", ResponseHelper.BAD_REQUEST));
+    }
+
+    const data = await MeterService.toggleValve(id, userId);
+
+    ResponseHelper.sendSuccessResponse(res, {
+      message: `Meter valve ${data?.valveStatus ? "opened" : "closed"} successfully`,
+      data: {
+        deviceId: data?.deviceId,
+        valveStatus: data?.valveStatus,
+      },
+    });
+  });
+
+  static getMeterDetails = ControllerHelper.createHandler("get-meter-details", async (req, res, next) => {
+    const { id: userId } = (req as any).user;
+    const { id } = req.params;
+
+    if (!id) {
+      return next(new AppError("meter id is required", ResponseHelper.BAD_REQUEST));
+    }
+
+    const data = await MeterService.getMeterDetails(id, userId);
+
+    ResponseHelper.sendSuccessResponse(res, {
+      message: "Meter details retrieved successfully",
+      data,
+    });
+  });
 }
