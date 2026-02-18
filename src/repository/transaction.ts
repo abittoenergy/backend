@@ -72,11 +72,17 @@ export class TransactionRepository {
     return result;
   }
 
-  async findByUserId(userId: string): Promise<Transaction[]> {
+  async findByUserId(userId: string, meterId?: string): Promise<Transaction[]> {
+    const conditions = [eq(transactions.userId, userId)];
+
+    if (meterId) {
+      conditions.push(sql`${transactions.metadata}->>'meterId' = ${meterId}`);
+    }
+
     return await this.db
       .select()
       .from(transactions)
-      .where(eq(transactions.userId, userId))
+      .where(and(...conditions))
       .orderBy(desc(transactions.createdAt));
   }
 

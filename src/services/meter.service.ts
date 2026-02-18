@@ -375,4 +375,19 @@ export default class MeterService {
 
     return updatedMeter;
   }
+
+  static async handleValveStatusUpdate(deviceId: string, valveStatus: boolean) {
+    try {
+      const meter = await MeterRepo.findByDeviceId(deviceId);
+      if (!meter) {
+        logger.warn(`Valve status report for unknown meter: ${deviceId}`);
+        return;
+      }
+
+      await MeterRepo.updateValveStatus(deviceId, valveStatus);
+      logger.info(`Valve status updated for meter ${deviceId}: ${valveStatus ? "OPEN" : "CLOSED"}`);
+    } catch (error: any) {
+      logger.error(`Failed to handle valve status update for ${deviceId}:`, error);
+    }
+  }
 }

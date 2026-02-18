@@ -1,5 +1,6 @@
 import mqttService, { DeviceTelemetry } from "../services/mqtt.service";
 import GasPurchaseService from "../services/gas-purchase.service";
+import MeterService from "../services/meter.service";
 import logger from "../config/logger";
 
 /**
@@ -22,6 +23,14 @@ export function initializeGasPurchaseMqttListener(): void {
       if (data.data.requestBalance === true) {
         GasPurchaseService.handleBalanceRequest(data.deviceId);
       }
+
+      // Check if this is a valve status report
+      if (data.data.valveStatus !== undefined) {
+        const valveStatus = Boolean(data.data.valveStatus);
+        MeterService.handleValveStatusUpdate(data.deviceId, valveStatus);
+      }
+
+
     } catch (error: any) {
       logger.error("Error processing MQTT device data", {
         error: error.message,

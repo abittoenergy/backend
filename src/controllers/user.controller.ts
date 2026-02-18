@@ -89,12 +89,13 @@ export default class UserController {
 
   static getActivities = ControllerHelper.createHandler("user.get-activities", async (req, res, next) => {
     const { id: userId } = (req as any).user;
+    const { meterId } = req.query;
 
     if (!userId) {
       return next(new AppError("User not found", ResponseHelper.RESOURCE_NOT_FOUND));
     }
 
-    const activities = await UserService.getUserActivities(userId);
+    const activities = await UserService.getUserActivities(userId, meterId as string);
 
     ResponseHelper.sendSuccessResponse(res, {
       message: "Activities retrieved successfully",

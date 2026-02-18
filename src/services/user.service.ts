@@ -101,10 +101,10 @@ export default class UserService {
     };
   }
 
-  static async getUserActivities(userId: string) {
+  static async getUserActivities(userId: string, meterId?: string) {
     const [transactions, audits] = await Promise.all([
-      this.transactionRepo.findByUserId(userId),
-      this.auditRepo.findByUserId(userId, 20),
+      this.transactionRepo.findByUserId(userId, meterId),
+      this.auditRepo.findByUserId(userId, 20, meterId),
     ]);
 
     const activities = [
@@ -130,6 +130,6 @@ export default class UserService {
       })),
     ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-    return activities.slice(0, 50); 
+    return activities.slice(0, 50);
   }
 }

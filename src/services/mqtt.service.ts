@@ -1,8 +1,6 @@
-import { MqttClient } from "mqtt";
 import { getMqttClient } from "../config/mqtt";
 import logger from "../config/logger";
 
-// Device telemetry data interface
 export interface DeviceTelemetry {
     deviceId: string;
     timestamp: number;
@@ -13,6 +11,7 @@ export interface DeviceTelemetry {
         energy?: number;
         temperature?: number;
         status?: string;
+        valveStatus?: boolean;
         [key: string]: unknown;
     };
 }

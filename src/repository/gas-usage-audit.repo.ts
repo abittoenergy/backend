@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { getDb } from "../config/db";
 import { gasUsageAudits, NewGasUsageAudit, GasUsageAudit } from "../db/schema/gas-usage-audits.schema";
 
@@ -10,11 +10,16 @@ export class GasUsageAuditRepository {
     return result;
   }
 
-  async findByUserId(userId: string, limit: number = 10): Promise<GasUsageAudit[]> {
+  async findByUserId(userId: string, limit: number = 10, meterId?: string): Promise<GasUsageAudit[]> {
+    const conditions = [eq(gasUsageAudits.userId, userId)];
+    if (meterId) {
+      conditions.push(eq(gasUsageAudits.meterId, meterId));
+    }
+
     return await this.db
       .select()
       .from(gasUsageAudits)
-      .where(eq(gasUsageAudits.userId, userId))
+      .where(and(...conditions))
       .orderBy(desc(gasUsageAudits.createdAt))
       .limit(limit);
   }
