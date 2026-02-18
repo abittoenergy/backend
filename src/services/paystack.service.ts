@@ -24,7 +24,7 @@ export default class PaystackService {
     };
   }
 
-  static async initializeTransaction(email: string, amount: number, metadata: any): Promise<PaystackInitializeResponse> {
+  static async initializeTransaction(email: string, amount: number, metadata: any, callbackUrl?: string): Promise<PaystackInitializeResponse> {
     try {
       const response = await axios.post(
         `${this.BASE_URL}/transaction/initialize`,
@@ -32,6 +32,7 @@ export default class PaystackService {
           email,
           amount: amount * 100, // Paystack expects amount in kobo
           metadata,
+          callback_url: callbackUrl,
         },
         { headers: this.getHeaders() }
       );

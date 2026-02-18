@@ -33,12 +33,10 @@ export default class GasPurchaseService {
     meterId: string,
     amount: number
   ): Promise<{ authorizationUrl: string; reference: string; kgPurchased: number }> {
-    // Validate amount
     if (amount <= 0) {
       throw new AppError("Amount must be greater than zero", ResponseHelper.BAD_REQUEST);
     }
 
-    // Verify meter exists and belongs to user
     const meter = await MeterRepo.findById(meterId);
     if (!meter) {
       throw new AppError("Meter not found", ResponseHelper.RESOURCE_NOT_FOUND);
@@ -52,7 +50,6 @@ export default class GasPurchaseService {
     }
 
 
-    // Get gas price from settings
     const settings = await this.settingsRepo.getSettings();
     if (!settings || !settings.gasPricePerKg) {
       throw new AppError(
@@ -68,11 +65,10 @@ export default class GasPurchaseService {
     if (amount < gasPricePerKg) {
       throw new AppError(`Minimum gas purchase amount is ${gasPricePerKg}/kg`, ResponseHelper.BAD_REQUEST);
     }
-    // Calculate kg purchased (amount is in Naira, convert to kobo for calculation)
+   
     const amountInKobo = amount * 100;
     const kgPurchased = amount / gasPricePerKg;
 
-    // Get user for Paystack initialization
     const userRepo = new UserRepository();
     const user = await userRepo.findById(userId);
 
@@ -80,19 +76,17 @@ export default class GasPurchaseService {
       throw new AppError("User not found", ResponseHelper.RESOURCE_NOT_FOUND);
     }
 
-    // Initialize Paystack transaction
     const paystackData = await PaystackService.initializeTransaction(user.email, amount, {
       userId,
       meterId,
       type: "GAS_PURCHASE_ONLINE",
       kgPurchased: kgPurchased.toFixed(3),
       gasPricePerKg: gasPricePerKg.toFixed(2),
-    });
+    }, `${envConfig.app.url}/dashboard`);
 
-    // Create transaction record (without walletId for online purchase)
     const transaction = await this.transactionRepo.create({
       userId,
-      walletId: null, // No wallet for online purchase
+      walletId: null, 
       amount: amountInKobo,
       type: "GAS_PURCHASE_ONLINE",
       status: "PENDING",
@@ -106,7 +100,6 @@ export default class GasPurchaseService {
       },
     });
 
-    // Create gas purchase record
     await this.gasPurchaseRepo.create({
       userId,
       meterId,
@@ -261,10 +254,8 @@ export default class GasPurchaseService {
     paystackData: any
   ): Promise<void> {
     try {
-      // Update transaction status
       await this.transactionRepo.updateStatus(transactionId, "SUCCESS", paystackData);
 
-      // Find associated gas purchase
       const purchase = await this.gasPurchaseRepo.findByTransactionId(transactionId);
 
       if (!purchase) {
@@ -475,7 +466,6 @@ export default class GasPurchaseService {
         balance = parseFloat(meter.availableGasKg || "0");
       }
 
-      // Send MQTT command
       mqttService.sendCommand(meter.deviceId, {
         commandId: `purchase_conf_${purchaseId}_${Date.now()}`,
         action: "PURCHASE_CONFIRMED",
@@ -560,7 +550,6 @@ export default class GasPurchaseService {
         },
       });
 
-      // Create in-app notification
       const NotificationService = (await import("./notification.service")).default;
       await NotificationService.createNotification(purchase.userId, {
         title: "Gas Purchase Successful",
@@ -579,7 +568,6 @@ export default class GasPurchaseService {
         stack: error.stack,
         purchaseId,
       });
-      // Don't throw - email failure shouldn't break the purchase flow
     }
   }
 
@@ -633,14 +621,12 @@ export default class GasPurchaseService {
    */
   static async checkPaymentStatus(reference: string, userId: string) {
     try {
-      // Find transaction by reference
       const transaction = await this.transactionRepo.findByReference(reference);
 
       if (!transaction) {
         throw new AppError("Transaction not found", ResponseHelper.RESOURCE_NOT_FOUND);
       }
 
-      // Verify ownership
       if (transaction.userId !== userId) {
         throw new AppError(
           "You do not have permission to view this transaction",
@@ -648,12 +634,10 @@ export default class GasPurchaseService {
         );
       }
 
-      // Check if it's a gas purchase transaction
       if (transaction.type !== "GAS_PURCHASE_ONLINE") {
         throw new AppError("Invalid transaction type", ResponseHelper.BAD_REQUEST);
       }
 
-      // Find associated gas purchase
       const purchase = await this.gasPurchaseRepo.findByTransactionId(transaction.id);
 
       if (!purchase) {
@@ -666,7 +650,6 @@ export default class GasPurchaseService {
         };
       }
 
-      // Get meter details
       const meter = await MeterRepo.findById(purchase.meterId);
 
       const userRepo = new UserRepository();

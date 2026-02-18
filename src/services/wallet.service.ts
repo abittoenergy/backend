@@ -6,6 +6,7 @@ import ResponseHelper from "../utils/helpers/response.helper";
 import { UserRepository } from "../repository/user";
 import logger from "../config/logger";
 import { getDb } from "../config/db";
+import envConfig from "../config/env";
 
 export default class WalletService {
   private static walletRepo = new WalletRepository();
@@ -44,7 +45,7 @@ export default class WalletService {
       userId,
       walletId: wallet.id,
       type: "WALLET_TOPUP",
-    });
+    }, `${envConfig.app.url}/dashboard`);
 
     await this.transactionRepo.create({
       userId,
