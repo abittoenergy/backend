@@ -32,4 +32,15 @@ export default class SystemSettingsController {
       message: "System settings updated successfully"
     });
   });
+
+  static getGasPrice = ControllerHelper.createHandler("system-settings.get-price", async (req, res, next) => {
+    const settings = await SystemSettingsService.getSettings();
+    ResponseHelper.sendSuccessResponse(res, {
+      data: {
+        gasPricePerKg: settings.gasPricePerKg,
+        currency: settings.currency
+      },
+      message: "Gas price retrieved successfully"
+    });
+  });
 }

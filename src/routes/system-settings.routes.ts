@@ -5,6 +5,8 @@ import { systemSettingsRateLimiter } from "../middlewares/rate-limiting";
 
 const SystemSettingsRouter = express.Router();
 
+SystemSettingsRouter.get("/price-per-kg", AuthMiddleware.protect, systemSettingsRateLimiter, SystemSettingsController.getGasPrice);
+
 SystemSettingsRouter.use(AuthMiddleware.protect);
 SystemSettingsRouter.use(AuthMiddleware.restrictTo("admin", "super-admin"));
 

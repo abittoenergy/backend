@@ -86,4 +86,19 @@ export default class UserController {
       data: result,
     });
   });
+
+  static getActivities = ControllerHelper.createHandler("user.get-activities", async (req, res, next) => {
+    const { id: userId } = (req as any).user;
+
+    if (!userId) {
+      return next(new AppError("User not found", ResponseHelper.RESOURCE_NOT_FOUND));
+    }
+
+    const activities = await UserService.getUserActivities(userId);
+
+    ResponseHelper.sendSuccessResponse(res, {
+      message: "Activities retrieved successfully",
+      data: activities,
+    });
+  });
 }

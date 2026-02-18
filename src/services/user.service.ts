@@ -1,6 +1,8 @@
 import { UpdateProfileOnboardingInput } from "../validators/auth.validator";
 import { UserRepository } from "../repository/user";
 import { EstateRepo } from "../repository/estate";
+import { GasUsageAuditRepository } from "../repository/gas-usage-audit.repo";
+import { TransactionRepository } from "../repository/transaction";
 import AppError from "../utils/appError";
 import ResponseHelper from "../utils/helpers/response.helper";
 import { enqueueDVAGeneration } from "../queues/dva-generation.queue";
@@ -8,6 +10,8 @@ import { enqueueDVAGeneration } from "../queues/dva-generation.queue";
 export default class UserService {
   private static userRepository = new UserRepository();
   private static estateRepo = new EstateRepo();
+  private static auditRepo = new GasUsageAuditRepository();
+  private static transactionRepo = new TransactionRepository();
 
   static async updateProfileOnboarding(userId: string, data: UpdateProfileOnboardingInput) {
     const user = await this.userRepository.findById(userId);
@@ -95,5 +99,37 @@ export default class UserService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  static async getUserActivities(userId: string) {
+    const [transactions, audits] = await Promise.all([
+      this.transactionRepo.findByUserId(userId),
+      this.auditRepo.findByUserId(userId, 20),
+    ]);
+
+    const activities = [
+      ...transactions.map((t) => ({
+        id: t.id,
+        type: "TRANSACTION",
+        activityType: t.type,
+        amount: t.amount,
+        status: t.status,
+        description: t.description,
+        createdAt: t.createdAt,
+        metadata: t.metadata,
+      })),
+      ...audits.map((a) => ({
+        id: a.id,
+        type: "GAS_USAGE",
+        kgUsed: a.kgUsed,
+        deviceId: a.deviceId,
+        previousBalance: a.previousBalance,
+        newBalance: a.newBalance,
+        createdAt: a.createdAt,
+        metadata: a.metadata,
+      })),
+    ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    return activities.slice(0, 50); 
   }
 }
