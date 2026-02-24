@@ -28,8 +28,8 @@ export const DVAGenerationQueue = new Queue<DVAJobData>(QUEUE_NAME, {
       type: "exponential",
       delay: 2000,
     },
-    removeOnComplete: 100,
-    removeOnFail: false,
+    removeOnComplete: 10,
+    removeOnFail: 20,
   },
 });
 
@@ -90,7 +90,8 @@ export async function enqueueDVAGeneration(userId: string): Promise<void> {
   await DVAGenerationQueue.add(
     { userId },
     {
-      priority: 5, // Medium-high priority
+      jobId: userId, // Deduplicate: only one pending job per user
+      priority: 5,   // Medium-high priority
     }
   );
   logger.debug("DVA generation job enqueued", { userId });

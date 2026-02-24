@@ -184,7 +184,7 @@ export default class RedisManager {
             await DailyQueue.add({}, { repeat: { cron: "0 0 * * *", tz: "UTC" } });
 
 
-            const dvaCheckerCron = "* * * * *"; // Every minute
+            const dvaCheckerCron = "*/30 * * * *"; // Every 30 minutes
             const dvaCheckerJobId = "dva-checker-cron";
 
             const existingDVAChecker = await DVACheckerQueue.getRepeatableJobs();

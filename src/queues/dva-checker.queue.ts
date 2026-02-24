@@ -25,8 +25,8 @@ export const DVACheckerQueue = new Queue(QUEUE_NAME, {
       type: "exponential",
       delay: 5000,
     },
-    removeOnComplete: 50,
-    removeOnFail: false,
+    removeOnComplete: 5,
+    removeOnFail: 10,
   },
 });
 
