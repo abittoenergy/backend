@@ -65,7 +65,7 @@ export default class GasPurchaseService {
     if (amount < gasPricePerKg) {
       throw new AppError(`Minimum gas purchase amount is ${gasPricePerKg}/kg`, ResponseHelper.BAD_REQUEST);
     }
-   
+
     const amountInKobo = amount * 100;
     const kgPurchased = amount / gasPricePerKg;
 
@@ -86,7 +86,7 @@ export default class GasPurchaseService {
 
     const transaction = await this.transactionRepo.create({
       userId,
-      walletId: null, 
+      walletId: null,
       amount: amountInKobo,
       type: "GAS_PURCHASE_ONLINE",
       status: "PENDING",
@@ -325,7 +325,7 @@ export default class GasPurchaseService {
       }
 
       if (kgUsed > previousBalance) {
-        logger.warn(`Usage exceeds balance for meter ${deviceId}. Capping usage.`, {
+        logger.warn(`Usage exceeds balance for meter ${deviceId}. Capping usage from ${kgUsed}kg to ${previousBalance}kg`, {
           deviceId,
           previousBalance,
           kgUsed,

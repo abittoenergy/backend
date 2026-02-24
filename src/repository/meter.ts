@@ -167,7 +167,7 @@ export const MeterRepo = {
     const [result] = await client
       .update(meters)
       .set({
-        availableGasKg: sql`${meters.availableGasKg} + ${amountKg}`,
+        availableGasKg: sql`GREATEST(0, ${meters.availableGasKg} + ${amountKg})`,
         updatedAt: new Date(),
       })
       .where(eq(meters.id, meterId))
