@@ -38,10 +38,12 @@ export default class GasPurchaseService {
       throw new AppError("Amount must be greater than zero", ResponseHelper.BAD_REQUEST);
     }
 
-    const meter = await MeterRepo.findById(meterId);
-    if (!meter) {
+    const result = await MeterRepo.findById(meterId);
+    if (!result) {
       throw new AppError("Meter not found", ResponseHelper.RESOURCE_NOT_FOUND);
     }
+
+    const meter = result.meters;
 
     if (meter.userId !== userId) {
       throw new AppError(
@@ -140,10 +142,12 @@ export default class GasPurchaseService {
     }
 
     // 2. Verify meter ownership
-    const meter = await MeterRepo.findById(meterId);
-    if (!meter) {
+    const result = await MeterRepo.findById(meterId);
+    if (!result) {
       throw new AppError("Meter not found", ResponseHelper.RESOURCE_NOT_FOUND);
     }
+
+    const meter = result.meters;
 
     if (meter.userId !== userId) {
       throw new AppError(
@@ -469,11 +473,13 @@ export default class GasPurchaseService {
         return;
       }
 
-      const meter = await MeterRepo.findById(purchase.meterId);
-      if (!meter) {
+      const result = await MeterRepo.findById(purchase.meterId);
+      if (!result) {
         logger.warn(`Meter not found for device notification: ${purchaseId}`);
         return;
       }
+
+      const meter = result.meters;
 
       let balance = newBalance;
       if (balance === undefined) {
@@ -525,11 +531,13 @@ export default class GasPurchaseService {
         return;
       }
 
-      const meter = await MeterRepo.findById(purchase.meterId);
-      if (!meter) {
+      const result = await MeterRepo.findById(purchase.meterId);
+      if (!result) {
         logger.warn(`Meter not found for purchase: ${purchaseId}`);
         return;
       }
+
+      const meter = result.meters;
 
       const transaction = await this.transactionRepo.findById(purchase.transactionId);
 
@@ -591,10 +599,12 @@ export default class GasPurchaseService {
    */
   private static async sendExhaustedBalanceNotification(meterId: string): Promise<void> {
     try {
-      const meter = await MeterRepo.findById(meterId);
-      if (!meter || !meter.userId) return;
+      const result = await MeterRepo.findById(meterId);
+      if (!result || !result.meters.userId) return;
 
-      const user = await this.userRepo.findById(meter.userId);
+      const meter = result.meters;
+
+      const user = await this.userRepo.findById(meter.userId as string);
       if (!user) return;
 
       await NotificationService.createNotification(user.id, {
@@ -664,7 +674,8 @@ export default class GasPurchaseService {
         };
       }
 
-      const meter = await MeterRepo.findById(purchase.meterId);
+      const result = await MeterRepo.findById(purchase.meterId);
+      const meter = result?.meters;
 
       const userRepo = new UserRepository();
       const user = await userRepo.findById(purchase.userId);

@@ -1,7 +1,8 @@
 import { eq, and, or, ilike, count, sql } from "drizzle-orm";
 import db from "../config/db";
 import { meters, Meter, NewMeter, MeterStatus } from "../db/schema/meters.schema";
-import { users } from "../db/schema/users.schema";
+import { User, users } from "../db/schema/users.schema";
+import { estate, Estate } from "../db/schema/estate.schema";
 
 export interface AdminMeterQueryOptions {
   page?: number;
@@ -21,9 +22,15 @@ export const MeterRepo = {
     return result;
   },
 
-  async findById(id: string): Promise<Meter | undefined> {
-    const [result] = await db.select().from(meters).where(eq(meters.id, id)).limit(1);
-    return result;
+  async findById(id: string): Promise<{ meters: Meter; users: User | null; estate: Estate | null } | null> {
+    const [result] = await db
+      .select()
+      .from(meters)
+      .where(eq(meters.id, id))
+      .leftJoin(users, eq(meters.userId, users.id))
+      .leftJoin(estate, eq(meters.estateId, estate.id))
+      .limit(1);
+    return (result as { meters: Meter; users: User | null; estate: Estate | null }) || null;
   },
 
   async create(data: NewMeter): Promise<Meter> {

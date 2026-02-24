@@ -209,17 +209,18 @@ export default class MeterService {
     });
 
     const user = await this.userRepo.findById(request.userId);
-    const meter = await MeterRepo.findById(request.meterId);
+    const result = await MeterRepo.findById(request.meterId);
 
-    if (status === LinkRequestStatus.APPROVED && meter) {
-      await MeterRepo.linkUser(meter.deviceId, request.userId, {
+    if (status === LinkRequestStatus.APPROVED && result) {
+      await MeterRepo.linkUser(result.meters.deviceId, request.userId, {
         estateId: request.estateId ?? undefined,
         houseNumber: request.houseNumber ?? undefined,
         estateName: request.estateName ?? undefined,
       });
     }
 
-    if (user && meter) {
+    if (user && result) {
+      const meter = result.meters;
       // Create in-app notification
       const NotificationService = (await import("./notification.service")).default;
 
@@ -395,10 +396,12 @@ export default class MeterService {
   }
 
   static async toggleValve(meterId: string, userId: string) {
-    const meter = await MeterRepo.findById(meterId);
-    if (!meter) {
+    const result = await MeterRepo.findById(meterId);
+    if (!result) {
       throw new AppError("Meter not found", ResponseHelper.RESOURCE_NOT_FOUND);
     }
+
+    const meter = result.meters;
 
     if (meter.userId !== userId) {
       throw new AppError("You do not have permission to control this meter", ResponseHelper.FORBIDDEN);
@@ -420,10 +423,12 @@ export default class MeterService {
   }
 
   static async getMeterDetails(meterId: string, userId: string) {
-    const meter = await MeterRepo.findById(meterId);
-    if (!meter) {
+    const result = await MeterRepo.findById(meterId);
+    if (!result) {
       throw new AppError("Meter not found", ResponseHelper.RESOURCE_NOT_FOUND);
     }
+
+    const meter = result.meters;
 
     if (meter.userId !== userId) {
       throw new AppError("You do not have permission to view this meter", ResponseHelper.FORBIDDEN);
@@ -452,10 +457,12 @@ export default class MeterService {
   }
 
   static async getMeterStats(meterId: string, userId: string) {
-    const meter = await MeterRepo.findById(meterId);
-    if (!meter) {
+    const result = await MeterRepo.findById(meterId);
+    if (!result) {
       throw new AppError("Meter not found", ResponseHelper.RESOURCE_NOT_FOUND);
     }
+
+    const meter = result.meters;
 
     if (meter.userId !== userId) {
       throw new AppError("You do not have permission to view stats for this meter", ResponseHelper.FORBIDDEN);
