@@ -65,6 +65,7 @@ const envConfig = {
     redis: {
         url: process.env.REDIS_URL || process.env.REDISCLOUD_URL || "redis://127.0.0.1:6379",
         telegramTokenTtl: toNumber(process.env.TELEGRAM_TOKEN_TTL, 900),
+        flushOnRestart: process.env.REDIS_FLUSH_ON_RESTART === "true",
     },
     email: {
         host: process.env.SMTP_HOST || "smtp.mailtrap.io",
@@ -88,7 +89,7 @@ const envConfig = {
         secretKey: process.env.PAYSTACK_SECRET_KEY,
         publicKey: process.env.PAYSTACK_PUBLIC_KEY,
     }
-    
+
 };
 
 export default envConfig;

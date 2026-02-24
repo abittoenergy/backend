@@ -110,20 +110,36 @@ export default class RedisManager {
 
             this.client.on("ready", () => {
                 logger.info("Redis connected and ready");
-                this.scheduleJobs()
+
+                const initRedis = async () => {
+                    if (envConfig.redis.flushOnRestart) {
+                        try {
+                            await this.client!.flushall();
+                            logger.info("Redis storage flushed successfully on restart");
+                        } catch (error) {
+                            logger.error("Failed to flush Redis storage on restart", {
+                                error: error instanceof Error ? error.message : "Unknown error",
+                            });
+                        }
+                    }
+
+                    await this.scheduleJobs();
+                };
+
+                initRedis()
                     .then(() =>
                         logger.info(
-                            "scheduleJobs() finished",
-                            withOperationContext("system", { action: "schedule_jobs_finished" })
+                            "Redis initialization finished",
+                            withOperationContext("system", { action: "redis_initialization_finished" })
                         )
                     )
                     .catch((error) =>
                         logger.error(
-                            "scheduleJobs() top-level error",
+                            "Redis initialization error",
                             withOperationContext("system", {
                                 message: error instanceof Error ? error.message : "Unknown error",
-                                stack: error instanceof Error ? error.message : "Unknown error",
-                                action: "schedule_jobs_error",
+                                stack: error instanceof Error ? error.stack : undefined,
+                                action: "redis_initialization_error",
                             })
                         )
                     );
@@ -264,6 +280,11 @@ export default class RedisManager {
     async ttl(key: string): Promise<number> {
         const client = await this.getClientOrConnect();
         return client.ttl(key);
+    }
+
+    async flushAll(): Promise<void> {
+        const client = await this.getClientOrConnect();
+        await client.flushall();
     }
 }
 
