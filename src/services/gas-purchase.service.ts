@@ -16,6 +16,7 @@ import { getDb, DbClient } from "../config/db";
 import { WalletRepository } from "../repository/wallet";
 import MeterService from "./meter.service";
 import NotificationService from "./notification.service";
+import { getRedisClient } from "../config/redis";
 
 export default class GasPurchaseService {
   private static gasPurchaseRepo = new GasPurchaseRepository();
@@ -305,6 +306,19 @@ export default class GasPurchaseService {
    */
   static async handleGasUsage(deviceId: string, kgUsed: number): Promise<void> {
     try {
+      // Rate limiting: Prevent spamming from IoT devices
+      const redisKey = `ratelimit:usage:${deviceId}`;
+      const redis = await getRedisClient();
+      const isRateLimited = await redis.get(redisKey);
+
+      if (isRateLimited) {
+        logger.debug(`Gas usage report rate limited for device: ${deviceId}. Skipping.`, { deviceId });
+        return;
+      }
+
+
+      await redis.set(redisKey, "1", "EX", envConfig.redis.gasUsageReportInterval);
+
       const meter = await MeterRepo.findByDeviceId(deviceId);
       if (!meter || !meter.userId) {
         logger.warn(`Usage reported for unknown or unlinked meter: ${deviceId}`);
