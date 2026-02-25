@@ -42,29 +42,23 @@ export const gasPurchases = pgTable(
       .notNull()
       .references(() => transactions.id, { onDelete: "cascade" }),
 
-    // Purchase details
     amountPaid: bigint("amount_paid", { mode: "number" }).notNull(), // in kobo
     gasPricePerKg: decimal("gas_price_per_kg", { precision: 20, scale: 2 }).notNull(),
     kgPurchased: decimal("kg_purchased", { precision: 10, scale: 3 }).notNull(),
-
-    // Refill status
+    kgDispensed: decimal("kg_dispensed", { precision: 10, scale: 3 }),
     status: text("status", { enum: GAS_PURCHASE_STATUSES })
       .$type<GasPurchaseStatus>()
       .notNull()
       .default(GasPurchaseStatus.PENDING),
 
-    // MQTT command tracking
     mqttCommandSent: boolean("mqtt_command_sent").default(false),
     mqttCommandSentAt: timestamp("mqtt_command_sent_at"),
     mqttCommandId: varchar("mqtt_command_id", { length: 255 }),
 
-    // Refill confirmation from meter
     refillStartedAt: timestamp("refill_started_at"),
     refillCompletedAt: timestamp("refill_completed_at"),
-    kgDispensed: decimal("kg_dispensed", { precision: 10, scale: 3 }), // Actual amount from meter
 
-    // Audit trail
-    metadata: jsonb("metadata"), // Store full MQTT responses, errors, etc.
+    metadata: jsonb("metadata"),
     failureReason: text("failure_reason"),
 
     createdAt: timestamp("created_at").defaultNow().notNull(),

@@ -1,4 +1,4 @@
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { getDb } from "../config/db";
 import {
   gasPurchases,
@@ -137,5 +137,26 @@ export class GasPurchaseRepository {
       .where(eq(gasPurchases.mqttCommandId, commandId))
       .limit(1);
     return purchase;
+  }
+
+  async getUserGasStats(userId: string) {
+    const last30d = new Date(new Date().getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const [{ totalKgPurchasedLast30d }] = await this.db
+      .select({
+        totalKgPurchasedLast30d: sql<string>`coalesce(sum(${gasPurchases.kgPurchased}), '0')`,
+      })
+      .from(gasPurchases)
+      .where(
+        and(
+          eq(gasPurchases.userId, userId),
+          eq(gasPurchases.status, GasPurchaseStatus.COMPLETED),
+          gte(gasPurchases.createdAt, last30d)
+        )
+      );
+
+    return {
+      totalKgPurchasedLast30d: parseFloat(totalKgPurchasedLast30d),
+    };
   }
 }

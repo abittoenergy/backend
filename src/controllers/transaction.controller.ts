@@ -76,4 +76,14 @@ export default class TransactionController {
       data,
     });
   });
+
+  static getUserStats = ControllerHelper.createHandler("get-user-stats", async (req: Request, res: Response, next: NextFunction) => {
+    const userId = (req as any).user.id;
+    const data = await TransactionService.getUserStats(userId);
+
+    ResponseHelper.sendSuccessResponse(res, {
+      message: "Transaction stats retrieved successfully",
+      data,
+    });
+  });
 }

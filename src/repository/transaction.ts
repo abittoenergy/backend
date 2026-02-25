@@ -262,7 +262,7 @@ export class TransactionRepository {
     };
   }
 
-  async findAllByMeter(userId: string, meterId: string, options: AdminTransactionQueryOptions = {}) {
+  async getMeterTransactions(userId: string, meterId: string, options: AdminTransactionQueryOptions = {}) {
     const page = options.page || 1;
     const limit = options.limit || 20;
     const offset = (page - 1) * limit;
@@ -308,6 +308,55 @@ export class TransactionRepository {
       total: Number(count),
       page,
       limit,
+    };
+  }
+
+  async getUserStats(userId: string) {
+    const now = new Date();
+    const last30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const last60d = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+    // Total Spent (SUCCESS) - All time (Includes top-ups)
+    const [{ totalSpentAllTime }] = await this.db
+      .select({ totalSpentAllTime: sql<string>`coalesce(sum(${transactions.amount}), '0')` })
+      .from(transactions)
+      .where(and(eq(transactions.userId, userId), eq(transactions.status, "SUCCESS")));
+
+    // Total Spent - Last 30 days
+    const [{ totalSpentLast30d }] = await this.db
+      .select({ totalSpentLast30d: sql<string>`coalesce(sum(${transactions.amount}), '0')` })
+      .from(transactions)
+      .where(and(eq(transactions.userId, userId), eq(transactions.status, "SUCCESS"), gte(transactions.createdAt, last30d)));
+
+    // Total Transactions count - SUCCESS only
+    const [{ totalTransactions }] = await this.db
+      .select({ totalTransactions: sql<number>`count(*)` })
+      .from(transactions)
+      .where(and(eq(transactions.userId, userId), eq(transactions.status, "SUCCESS")));
+
+    // Previous month spent (for percentage increase calculation)
+    const [{ prevMonthSpent }] = await this.db
+      .select({ prevMonthSpent: sql<string>`coalesce(sum(${transactions.amount}), '0')` })
+      .from(transactions)
+      .where(and(
+        eq(transactions.userId, userId),
+        eq(transactions.status, "SUCCESS"),
+        gte(transactions.createdAt, last60d),
+        lte(transactions.createdAt, last30d)
+      ));
+
+    const currentMonthSpent = parseFloat(totalSpentLast30d);
+    const previousMonthSpent = parseFloat(prevMonthSpent);
+
+    const percentageIncrease = previousMonthSpent > 0
+      ? ((currentMonthSpent - previousMonthSpent) / previousMonthSpent) * 100
+      : currentMonthSpent > 0 ? 100 : 0;
+
+    return {
+      totalSpentAllTime: parseFloat(totalSpentAllTime),
+      totalSpentLast30d: currentMonthSpent,
+      totalTransactions: Number(totalTransactions),
+      percentageIncreasePastMonth: parseFloat(percentageIncrease.toFixed(2)),
     };
   }
 }

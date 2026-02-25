@@ -31,4 +31,10 @@ TransactionRouter.get(
   TransactionController.getMeterTransactions
 );
 
+TransactionRouter.get(
+  "/stats",
+  AuthMiddleware.protect,
+  TransactionController.getUserStats
+);
+
 export default TransactionRouter;

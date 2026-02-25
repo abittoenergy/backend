@@ -1,9 +1,11 @@
 import { TransactionRepository, AdminTransactionQueryOptions } from "../repository/transaction";
+import { GasPurchaseRepository } from "../repository/gas-purchase.repo";
 import AppError from "../utils/appError";
 import ResponseHelper from "../utils/helpers/response.helper";
 
 export default class TransactionService {
   private static transactionRepo = new TransactionRepository();
+  private static gasPurchaseRepo = new GasPurchaseRepository();
 
   static async adminGetTransactions(query: AdminTransactionQueryOptions) {
     const [stats, { results, total }] = await Promise.all([
@@ -57,10 +59,10 @@ export default class TransactionService {
   }
 
   static async getMeterTransactions(userId: string, meterId: string, query: AdminTransactionQueryOptions) {
-    const { results, total } = await this.transactionRepo.findAllByMeter(userId, meterId, query);
+    const { results, total } = await this.transactionRepo.getMeterTransactions(userId, meterId, query);
 
     return {
-      transactions: results.map(tx => ({
+      transactions: results.map((tx: any) => ({
         ...tx,
         amount: tx.amount.toString(),
       })),
@@ -70,6 +72,21 @@ export default class TransactionService {
         limit: query.limit || 20,
         totalPages: Math.ceil(total / (query.limit || 20)),
       },
+    };
+  }
+
+  static async getUserStats(userId: string) {
+    const [transactionStats, gasStats] = await Promise.all([
+      this.transactionRepo.getUserStats(userId),
+      this.gasPurchaseRepo.getUserGasStats(userId),
+    ]);
+
+    return {
+      totalSpentAllTime: transactionStats.totalSpentAllTime.toString(),
+      totalSpentLast30d: transactionStats.totalSpentLast30d.toString(),
+      totalTransactions: transactionStats.totalTransactions,
+      percentageIncreasePastMonth: transactionStats.percentageIncreasePastMonth,
+      totalGasPurchasedKgLast30d: gasStats.totalKgPurchasedLast30d.toString(),
     };
   }
 }
