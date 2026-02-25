@@ -159,4 +159,27 @@ export class GasPurchaseRepository {
       totalKgPurchasedLast30d: parseFloat(totalKgPurchasedLast30d),
     };
   }
+
+  async getGlobalGasSoldStats() {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const [{ totalGasSoldKg }] = await this.db
+      .select({ totalGasSoldKg: sql<string>`coalesce(sum(${gasPurchases.kgPurchased}), '0')` })
+      .from(gasPurchases)
+      .where(eq(gasPurchases.status, GasPurchaseStatus.COMPLETED));
+
+    const [{ totalGasSoldKgToday }] = await this.db
+      .select({ totalGasSoldKgToday: sql<string>`coalesce(sum(${gasPurchases.kgPurchased}), '0')` })
+      .from(gasPurchases)
+      .where(and(
+        eq(gasPurchases.status, GasPurchaseStatus.COMPLETED),
+        gte(gasPurchases.createdAt, today)
+      ));
+
+    return {
+      totalGasSoldKg: parseFloat(totalGasSoldKg),
+      totalGasSoldKgToday: parseFloat(totalGasSoldKgToday),
+    };
+  }
 }

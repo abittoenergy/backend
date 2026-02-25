@@ -157,38 +157,38 @@ export class TransactionRepository {
 
   async getAdminStats() {
     const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const last30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const last60d = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-    // Total Revenue (SUCCESS)
     const [{ totalRevenue }] = await this.db
       .select({ totalRevenue: sql<string>`coalesce(sum(${transactions.amount}), '0')` })
       .from(transactions)
       .where(eq(transactions.status, "SUCCESS"));
 
-    // Processed in last 24h
+    const [{ totalRevenueToday }] = await this.db
+      .select({ totalRevenueToday: sql<string>`coalesce(sum(${transactions.amount}), '0')` })
+      .from(transactions)
+      .where(and(eq(transactions.status, "SUCCESS"), gte(transactions.createdAt, today)));
+
     const [{ processedLast24hrs }] = await this.db
       .select({ processedLast24hrs: sql<string>`coalesce(sum(${transactions.amount}), '0')` })
       .from(transactions)
       .where(and(eq(transactions.status, "SUCCESS"), gte(transactions.createdAt, last24h)));
 
-    // Total Transactions
-    const [{ totalTransactions }] = await this.db.select({ totalTransactions: sql<number>`count(*)` }).from(transactions);
+    const [{ totalTransactions }] = await this.db.select({ totalTransactions: sql<string>`count(*)` }).from(transactions);
 
-    // Current month count
     const [{ currentMonthCount }] = await this.db
-      .select({ currentMonthCount: sql<number>`count(*)` })
+      .select({ currentMonthCount: sql<string>`count(*)` })
       .from(transactions)
       .where(gte(transactions.createdAt, last30d));
 
-    // Previous month count
     const [{ prevMonthCount }] = await this.db
-      .select({ prevMonthCount: sql<number>`count(*)` })
+      .select({ prevMonthCount: sql<string>`count(*)` })
       .from(transactions)
       .where(and(gte(transactions.createdAt, last60d), lte(transactions.createdAt, last30d)));
 
-    // Average transaction time (SUCCESS or FAILED)
     const [{ avgTimeSeconds }] = await this.db
       .select({
         avgTimeSeconds: sql<number>`coalesce(avg(extract(epoch from (${transactions.updatedAt} - ${transactions.createdAt}))), 0)`
@@ -196,18 +196,21 @@ export class TransactionRepository {
       .from(transactions)
       .where(or(eq(transactions.status, "SUCCESS"), eq(transactions.status, "FAILED")));
 
-    // Total Failed
     const [{ totalFailed }] = await this.db
-      .select({ totalFailed: sql<number>`count(*)` })
+      .select({ totalFailed: sql<string>`count(*)` })
       .from(transactions)
       .where(eq(transactions.status, "FAILED"));
 
-    const percentageIncrease = prevMonthCount > 0
-      ? ((currentMonthCount - prevMonthCount) / prevMonthCount) * 100
-      : currentMonthCount > 0 ? 100 : 0;
+    const currentMonth = Number(currentMonthCount);
+    const prevMonth = Number(prevMonthCount);
+
+    const percentageIncrease = prevMonth > 0
+      ? ((currentMonth - prevMonth) / prevMonth) * 100
+      : currentMonth > 0 ? 100 : 0;
 
     return {
       totalRevenue: parseFloat(totalRevenue),
+      totalRevenueToday: parseFloat(totalRevenueToday),
       processedLast24hrs: parseFloat(processedLast24hrs),
       totalTransactions: Number(totalTransactions),
       percentageIncreasePastMonth: parseFloat(percentageIncrease.toFixed(2)),
@@ -359,4 +362,5 @@ export class TransactionRepository {
       percentageIncreasePastMonth: parseFloat(percentageIncrease.toFixed(2)),
     };
   }
+
 }

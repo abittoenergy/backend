@@ -142,14 +142,18 @@ export const MeterRepo = {
   },
 
   async getStats() {
-    const [totalMeters] = await db.select({ count: sql<number>`count(*)` }).from(meters);
-    const [linkedMeters] = await db.select({ count: sql<number>`count(*)` }).from(meters).where(sql`${meters.userId} IS NOT NULL`);
-    const [unlinkedMeters] = await db.select({ count: sql<number>`count(*)` }).from(meters).where(sql`${meters.userId} IS NULL`);
+    const [totalMeters] = await db.select({ count: sql<string>`count(*)` }).from(meters);
+    const [activeMeters] = await db.select({ count: sql<string>`count(*)` }).from(meters).where(eq(meters.status, MeterStatus.ACTIVE));
+    const [registeredMeters] = await db.select({ count: sql<string>`count(*)` }).from(meters).where(eq(meters.status, MeterStatus.REGISTERED));
+    const [unregisteredMeters] = await db.select({ count: sql<string>`count(*)` }).from(meters).where(eq(meters.status, MeterStatus.UNREGISTERED));
+    const [linkedMeters] = await db.select({ count: sql<string>`count(*)` }).from(meters).where(sql`${meters.userId} IS NOT NULL`);
 
     return {
       total: Number(totalMeters.count),
+      active: Number(activeMeters.count),
+      registered: Number(registeredMeters.count),
+      unregistered: Number(unregisteredMeters.count),
       linked: Number(linkedMeters.count),
-      unlinked: Number(unlinkedMeters.count),
     };
   },
 

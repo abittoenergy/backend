@@ -59,4 +59,58 @@ export class GasUsageAuditRepository {
       total: parseFloat(r.total || "0"),
     }));
   }
+
+  async getGlobalUsageStats(days: number = 7) {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const startDate = new Date(now);
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    const prevStartDate = new Date(startDate);
+    prevStartDate.setDate(prevStartDate.getDate() - days);
+
+    const chart = await this.db
+      .select({
+        date: sql<string>`date_trunc('day', ${gasUsageAudits.createdAt})::date`,
+        totalKg: sql<string>`sum(${gasUsageAudits.kgUsed})`,
+      })
+      .from(gasUsageAudits)
+      .where(gte(gasUsageAudits.createdAt, startDate))
+      .groupBy(sql`date_trunc('day', ${gasUsageAudits.createdAt})::date`)
+      .orderBy(sql`date_trunc('day', ${gasUsageAudits.createdAt})::date`);
+
+    const [{ totalKgThisWeek }] = await this.db
+      .select({ totalKgThisWeek: sql<string>`coalesce(sum(${gasUsageAudits.kgUsed}), '0')` })
+      .from(gasUsageAudits)
+      .where(gte(gasUsageAudits.createdAt, startDate));
+
+    const [{ totalKgToday }] = await this.db
+      .select({ totalKgToday: sql<string>`coalesce(sum(${gasUsageAudits.kgUsed}), '0')` })
+      .from(gasUsageAudits)
+      .where(gte(gasUsageAudits.createdAt, today));
+
+    const [{ totalKgPrevWeek }] = await this.db
+      .select({ totalKgPrevWeek: sql<string>`coalesce(sum(${gasUsageAudits.kgUsed}), '0')` })
+      .from(gasUsageAudits)
+      .where(and(gte(gasUsageAudits.createdAt, prevStartDate), lte(gasUsageAudits.createdAt, startDate)));
+
+    const thisWeek = parseFloat(totalKgThisWeek);
+    const prevWeek = parseFloat(totalKgPrevWeek);
+
+    const percentageChangeUsage = prevWeek > 0
+      ? ((thisWeek - prevWeek) / prevWeek) * 100
+      : thisWeek > 0 ? 100 : 0;
+
+    return {
+      usageChart: chart.map(r => ({
+        date: new Date(r.date).toISOString().split('T')[0],
+        totalKg: parseFloat(r.totalKg || '0')
+      })),
+      totalKgUsedThisWeek: thisWeek,
+      totalKgUsedToday: parseFloat(totalKgToday),
+      percentageChangeUsage: parseFloat(percentageChangeUsage.toFixed(2)),
+    };
+  }
 }

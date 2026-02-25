@@ -12,6 +12,7 @@ import DVARouter from "./dva.routes";
 import GasPurchaseRouter from "./gas-purchase.routes";
 import NotificationRouter from "./notification.routes";
 import TransactionRouter from "./transaction.routes";
+import AdminRouter from "./admin.routes";
 
 const AppRouter = express.Router();
 
@@ -63,6 +64,10 @@ const appRoutes: Routes = [
     {
         path: "/transactions",
         router: TransactionRouter
+    },
+    {
+        path: "/admin",
+        router: AdminRouter
     }
 ];
 

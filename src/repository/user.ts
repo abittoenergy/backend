@@ -97,29 +97,33 @@ export class UserRepository {
         today.setHours(0, 0, 0, 0);
         const isoToday = today.toISOString();
 
-        // 1. Total Users
-        const [{ totalUsers }] = await this.db.select({ totalUsers: sql<number>`count(*)` }).from(users);
+        const last30d = new Date();
+        last30d.setDate(last30d.getDate() - 30);
+        const isoLast30d = last30d.toISOString();
 
-        // 2. Joined Today
+        const [{ totalUsers }] = await this.db.select({ totalUsers: sql<string>`count(*)` }).from(users);
+
         const [{ joinedToday }] = await this.db
-            .select({ joinedToday: sql<number>`count(*)` })
+            .select({ joinedToday: sql<string>`count(*)` })
             .from(users)
             .where(sql`${users.createdAt} >= ${isoToday}`);
 
-        // 3. Active Today (proxied by updatedAt)
+        const [{ userIncreasePastMonth }] = await this.db
+            .select({ userIncreasePastMonth: sql<string>`count(*)` })
+            .from(users)
+            .where(sql`${users.createdAt} >= ${isoLast30d}`);
+
         const [{ activeToday }] = await this.db
-            .select({ activeToday: sql<number>`count(*)` })
+            .select({ activeToday: sql<string>`count(*)` })
             .from(users)
             .where(sql`${users.updatedAt} >= ${isoToday}`);
 
-        // 4. Users without linked meters
         const [{ withoutMeters }] = await this.db
-            .select({ withoutMeters: sql<number>`count(*)` })
+            .select({ withoutMeters: sql<string>`count(*)` })
             .from(users)
             .leftJoin(meters, eq(users.id, meters.userId))
             .where(isNull(meters.id));
 
-        // 5. Total Kg purchased today
         const [{ totalKgToday }] = await this.db
             .select({ totalKgToday: sql<string>`coalesce(sum(${gasPurchases.kgPurchased}), '0')` })
             .from(gasPurchases)
@@ -131,6 +135,7 @@ export class UserRepository {
         return {
             totalUsers: Number(totalUsers),
             joinedToday: Number(joinedToday),
+            userIncreasePastMonth: Number(userIncreasePastMonth),
             activeToday: Number(activeToday),
             usersWithoutMeters: Number(withoutMeters),
             totalKgBoughtToday: parseFloat(totalKgToday),
