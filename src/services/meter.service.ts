@@ -439,7 +439,6 @@ export default class MeterService {
 
   static async closeValve(deviceId: string) {
     try {
-      // Send MQTT command
       mqttService.sendCommand(deviceId, {
         commandId: `valve_close_${Date.now()}`,
         action: "VALVE_CONTROL",
@@ -448,7 +447,6 @@ export default class MeterService {
         },
       });
 
-      // Update database
       await MeterRepo.updateValveStatus(deviceId, false);
       logger.info(`Valve automatically closed for meter ${deviceId} due to zero balance`);
     } catch (error: any) {

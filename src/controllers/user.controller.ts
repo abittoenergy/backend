@@ -102,4 +102,19 @@ export default class UserController {
       data: activities,
     });
   });
+
+  static adminRegisterUser = ControllerHelper.createHandler("user.admin-register-user", async (req, res, next) => {
+    const parsed = UserValidator.validateAdminRegisterUser(req.body);
+    if (!parsed.success) {
+      const message = parsed.error.errors?.[0]?.message || "Validation failed";
+      return next(new AppError(message, ResponseHelper.BAD_REQUEST));
+    }
+
+    const result = await UserService.adminRegisterUser(parsed.data);
+
+    ResponseHelper.sendSuccessResponse(res, {
+      message: "User registered successfully",
+      data: result,
+    });
+  });
 }

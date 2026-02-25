@@ -6,6 +6,13 @@ import { TransactionRepository } from "../repository/transaction";
 import AppError from "../utils/appError";
 import ResponseHelper from "../utils/helpers/response.helper";
 import { enqueueDVAGeneration } from "../queues/dva-generation.queue";
+import { MeterRepo } from "../repository/meter";
+import { MeterStatus } from "../db/schema/meters.schema";
+import AuthHelper from "../utils/helpers/auth.helper";
+import EmailService from "./email.service";
+import envConfig from "../config/env";
+import otpGenerator from "otp-generator";
+import logger from "../config/logger";
 
 export default class UserService {
   private static userRepository = new UserRepository();
@@ -131,5 +138,102 @@ export default class UserService {
     ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
     return activities.slice(0, 50);
+  }
+
+  static async adminRegisterUser(data: {
+    firstName: string;
+    lastName: string;
+    gender: "male" | "female" | "other";
+    phoneNumber: string;
+    estateId: string;
+    estateName?: string;
+    houseNumber: string;
+    nin: string;
+    user_email: string;
+    meterNumber?: string;
+  }) {
+    const existingUser = await this.userRepository.findByEmail(data.user_email);
+    if (existingUser) {
+      throw new AppError("User with this email already exists", ResponseHelper.BAD_REQUEST);
+    }
+
+    if (data.estateId !== "OTHER") {
+      const estate = await this.estateRepo.findById(data.estateId);
+      if (!estate) {
+        throw new AppError("Estate not found", ResponseHelper.BAD_REQUEST);
+      }
+    }
+
+    let meterId: string | undefined;
+    if (data.meterNumber) {
+      const meter = await MeterRepo.findByMeterNumber(data.meterNumber);
+      if (!meter) {
+        throw new AppError("Meter not found", ResponseHelper.BAD_REQUEST);
+      }
+      if (meter.userId) {
+        throw new AppError("Meter is already linked to another account", ResponseHelper.BAD_REQUEST);
+      }
+      meterId = meter.id;
+    }
+
+    const temporaryPassword = otpGenerator.generate(10, {
+      upperCaseAlphabets: true,
+      specialChars: false,
+      lowerCaseAlphabets: true,
+      digits: true,
+    });
+
+    const passwordHash = await AuthHelper.passwordToHash(temporaryPassword);
+
+    const newUser = await this.userRepository.create({
+      email: data.user_email,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      gender: data.gender,
+      phoneNumber: data.phoneNumber,
+      estateId: data.estateId === "OTHER" ? null : data.estateId,
+      onboardingEstateName: data.estateId === "OTHER" ? data.estateName : null,
+      houseNumber: data.houseNumber,
+      nin: data.nin,
+      onboardingCompleted: true,
+      emailVerified: true, // Admin registered users are considered verified
+      emailVerifiedAt: new Date(),
+      passwordHash,
+    });
+
+    if (data.meterNumber && meterId) {
+      const meter = await MeterRepo.findByMeterNumber(data.meterNumber);
+      if (meter) {
+        await MeterRepo.linkUser(
+          meter.deviceId,
+          newUser.id,
+          {
+            estateId: data.estateId === "OTHER" ? undefined : data.estateId,
+            houseNumber: data.houseNumber,
+            estateName: data.estateId === "OTHER" ? data.estateName : undefined,
+          },
+          data.meterNumber
+        );
+      }
+    }
+
+    await enqueueDVAGeneration(newUser.id);
+
+    EmailService.sendEmail({
+      to: newUser.email,
+      subject: "Welcome to Abittoenergy - Your Account Credentials",
+      template: "admin-registration-welcome",
+      context: {
+        firstName: newUser.firstName,
+        email: newUser.email,
+        temporaryPassword,
+        loginUrl: `${envConfig.baseUrl}/login`,
+      },
+    }).catch((err) =>
+      logger.error(`Admin Registration: Failed to send welcome email to ${newUser.email}: ${err.message}`)
+    );
+
+    const { passwordHash: _, ...safeUser } = newUser as any;
+    return safeUser;
   }
 }
