@@ -66,7 +66,7 @@ const envConfig = {
         url: process.env.REDIS_URL || process.env.REDISCLOUD_URL || "redis://127.0.0.1:6379",
         telegramTokenTtl: toNumber(process.env.TELEGRAM_TOKEN_TTL, 900),
         flushOnRestart: process.env.REDIS_FLUSH_ON_RESTART === "true",
-        gasUsageReportInterval: toNumber(process.env.GAS_USAGE_REPORT_INTERVAL_SEC, 60),
+        gasUsageReportInterval: toNumber(process.env.GAS_USAGE_REPORT_INTERVAL_SEC, 30),
     },
     email: {
         host: process.env.SMTP_HOST || "smtp.mailtrap.io",
