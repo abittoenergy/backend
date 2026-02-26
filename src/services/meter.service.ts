@@ -434,7 +434,12 @@ export default class MeterService {
       throw new AppError("You do not have permission to view this meter", ResponseHelper.FORBIDDEN);
     }
 
-    return meter;
+    const { meters,estate, users } = result;
+    if(users){
+      const {passwordHash,...rest} = users
+      return {  meter:meters,estate,user:rest };
+    }
+    return {  meter:meters,estate };
   }
 
   static async closeValve(deviceId: string) {
