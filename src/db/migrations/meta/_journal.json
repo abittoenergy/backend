@@ -120,6 +120,13 @@
       "when": 1771452835110,
       "tag": "0016_daily_green_goblin",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1772109337342,
+      "tag": "0017_lying_amphibian",
+      "breakpoints": true
     }
   ]
 }

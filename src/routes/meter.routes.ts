@@ -21,6 +21,7 @@ MeterRouter.get("/details/:id", meterRateLimiter, AuthMiddleware.protect, MeterC
 MeterRouter.get("/stats/:id", meterRateLimiter, AuthMiddleware.protect, MeterController.getMeterStats);
 MeterRouter.get("/link/:meterNumber", meterRateLimiter, AuthMiddleware.protect, MeterController.checkMeterRegistration);
 MeterRouter.post("/link/:meterNumber", meterRateLimiter, AuthMiddleware.protect, MeterController.requestMeterLink);
+MeterRouter.post("/gift", meterRateLimiter, AuthMiddleware.protect, MeterController.giftGas);
 MeterRouter.post("/:id/toggle-valve", meterRateLimiter, AuthMiddleware.protect, MeterController.toggleValve);
 
 // ADMIN

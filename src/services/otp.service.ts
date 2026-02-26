@@ -105,9 +105,12 @@ export default class OTPService {
         onboardingCompleted: user.onboardingCompleted,
       };
     }
+    if (type === OTP_TYPES.GAS_GIFTING_AUTHORIZATION) {
+      await redis.del(key);
+      return { success: true };
+    }
 
     await redis.del(key);
-
   }
 
   private static getRedisKey(email: string, type: OtpType): string {

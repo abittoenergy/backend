@@ -83,4 +83,17 @@ export default class MeterValidator {
     });
     return schema.safeParse(data);
   }
+
+  static validateGiftGas(data: unknown) {
+    return giftGasSchema.safeParse(data);
+  }
 }
+
+export const giftGasSchema = z.object({
+  sourceMeterId: z.string({ required_error: "Source meter ID is required" }).uuid({ message: "Invalid source meter ID" }),
+  recipientMeterNumber: z.string({ required_error: "Recipient meter number is required" }),
+  amountKg: z.number({ required_error: "Amount in kg is required" }).positive({ message: "Amount must be greater than 0" }),
+  otp: z.string({ required_error: "OTP is required" }).length(6, { message: "OTP must be 6 digits" }),
+});
+
+export type GiftGasInput = z.infer<typeof giftGasSchema>;

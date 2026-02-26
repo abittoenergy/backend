@@ -37,7 +37,7 @@ export const OTP_TYPES = {
   DISABLE_MFA: "disable_mfa",
   ADMIN_UPDATE_ASSET_FEES: "admin_update_asset_fees",
   UPDATE_USER_PROFILE: "update_user_profile",
-  FORGOT_UNLOCK_PIN: "forgot_unlock_pin"
+  GAS_GIFTING_AUTHORIZATION: "gas_gifting_authorization",
 } as const;
 
 export type OtpType = typeof OTP_TYPES[keyof typeof OTP_TYPES];

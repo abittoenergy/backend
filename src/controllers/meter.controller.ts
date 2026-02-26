@@ -3,6 +3,7 @@ import AppError from "../utils/appError";
 import ControllerHelper from "../utils/helpers/controller.helper";
 import ResponseHelper from "../utils/helpers/response.helper";
 import MeterService from "../services/meter.service";
+import { GasTransferService } from "../services/gas-transfer.service";
 import MeterValidator from "../validators/meter.validator";
 
 export default class MeterController {
@@ -229,6 +230,30 @@ export default class MeterController {
 
     ResponseHelper.sendSuccessResponse(res, {
       message: "Meter statistics retrieved successfully",
+      data,
+    });
+  });
+
+  static giftGas = ControllerHelper.createHandler("gift-gas", async (req, res, next) => {
+    const { id: userId } = (req as any).user;
+
+    const validation = MeterValidator.validateGiftGas(req.body);
+    if (!validation.success) {
+      return next(new AppError(validation.error.errors[0].message, ResponseHelper.BAD_REQUEST));
+    }
+
+    const { sourceMeterId, recipientMeterNumber, amountKg, otp } = validation.data;
+
+    const data = await GasTransferService.giftGas({
+      senderId: userId,
+      sourceMeterId,
+      recipientMeterNumber,
+      amountKg,
+      otp,
+    });
+
+    ResponseHelper.sendSuccessResponse(res, {
+      message: "Gas gifted successfully",
       data,
     });
   });

@@ -45,8 +45,9 @@ export class TransactionRepository {
     return result;
   }
 
-  async create(data: NewTransaction): Promise<Transaction> {
-    const [result] = await (this.db as DbClient).insert(transactions).values(data).returning();
+  async create(data: NewTransaction, dbInstance?: any): Promise<Transaction> {
+    const client = dbInstance || this.db;
+    const [result] = await (client as DbClient).insert(transactions).values(data).returning();
     return result;
   }
 
