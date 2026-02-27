@@ -1,4 +1,4 @@
-import { eq, and, or, ilike, count, sql } from "drizzle-orm";
+import { eq, and, or, ilike, count, sql, lt } from "drizzle-orm";
 import db from "../config/db";
 import { meters, Meter, NewMeter, MeterStatus } from "../db/schema/meters.schema";
 import { User, users } from "../db/schema/users.schema";
@@ -185,5 +185,42 @@ export const MeterRepo = {
       .returning({ availableGasKg: meters.availableGasKg });
 
     return parseFloat(result.availableGasKg);
+  },
+
+  async updateConnectivity(deviceId: string, isOnline: boolean): Promise<Meter | undefined> {
+    const [result] = await db
+      .update(meters)
+      .set({
+        isOnline,
+        lastSeenAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(meters.deviceId, deviceId))
+      .returning();
+    return result;
+  },
+
+  async getOfflineMeters(thresholdSeconds: number): Promise<Meter[]> {
+    const thresholdDate = new Date(Date.now() - thresholdSeconds * 1000);
+    return await db
+      .select()
+      .from(meters)
+      .where(
+        and(
+          eq(meters.isOnline, true),
+          or(
+            lt(meters.lastSeenAt, thresholdDate),
+            sql`${meters.lastSeenAt} IS NULL`
+          )
+        )
+      );
+  },
+
+  async bulkUpdateOnlineStatus(ids: string[], isOnline: boolean): Promise<void> {
+    if (ids.length === 0) return;
+    await db
+      .update(meters)
+      .set({ isOnline, updatedAt: new Date() })
+      .where(or(...ids.map(id => eq(meters.id, id))));
   },
 };

@@ -127,6 +127,13 @@
       "when": 1772109337342,
       "tag": "0017_lying_amphibian",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1772190612972,
+      "tag": "0018_fuzzy_songbird",
+      "breakpoints": true
     }
   ]
 }

@@ -7,6 +7,7 @@ import DailyQueue from "../queues/daily.queue";
 import DVACheckerQueue from "../queues/dva-checker.queue";
 import { withOperationContext } from "../utils/loggerWithContext";
 import { GasUsageAggregationService } from "../services/gas-usage-aggregation.service";
+import MeterService from "../services/meter.service";
 
 export default class RedisManager {
     private static instance: RedisManager;
@@ -234,7 +235,16 @@ export default class RedisManager {
                 }
             }, flushInterval * 1000);
 
+            // Schedule Meter Connectivity Check
+            setInterval(async () => {
+                const refreshed = await this.client!.set(leaderKey, String(process.pid), "EX", 120, "XX");
+                if (refreshed === "OK") {
+                    await MeterService.checkConnectivity();
+                }
+            }, 10000); // Check every 10 seconds
+
             logger.info(`Gas usage aggregation flush scheduled every ${flushInterval}s`);
+            logger.info("Meter connectivity check scheduled every 10s");
 
         } catch (err: any) {
             logger.error(

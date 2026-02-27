@@ -34,6 +34,8 @@ export const meters = pgTable(
     houseNumber: varchar("house_number", { length: 20 }),
     estateName: text("estate_name"),
     availableGasKg: numeric("available_gas_kg", { precision: 10, scale: 3 }).default("0").notNull(),
+    lastSeenAt: timestamp("last_seen_at"),
+    isOnline: boolean("is_online").notNull().default(false),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

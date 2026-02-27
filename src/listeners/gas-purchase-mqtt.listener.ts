@@ -13,6 +13,10 @@ export function initializeGasPurchaseMqttListener(): void {
   // Subscribe to all device telemetry data
   mqttService.subscribeToAllDevices((data: DeviceTelemetry) => {
     try {
+      // Trigger heartbeat for every message received from the device
+      MeterService.handleHeartbeat(data.deviceId).catch(err =>
+        logger.error(`Failed to handle heartbeat for ${data.deviceId}`, err)
+      );
 
       // Check if this is a usage report
       if (data.data.gasUsage !== undefined) {

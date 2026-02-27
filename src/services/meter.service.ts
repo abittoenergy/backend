@@ -434,12 +434,12 @@ export default class MeterService {
       throw new AppError("You do not have permission to view this meter", ResponseHelper.FORBIDDEN);
     }
 
-    const { meters,estate, users } = result;
-    if(users){
-      const {passwordHash,...rest} = users
-      return {  meter:meters,estate,user:rest };
+    const { meters, estate, users } = result;
+    if (users) {
+      const { passwordHash, ...rest } = users
+      return { meter: meters, estate, user: rest };
     }
-    return {  meter:meters,estate };
+    return { meter: meters, estate };
   }
 
   static async closeValve(deviceId: string) {
@@ -507,5 +507,76 @@ export default class MeterService {
       weeklyChangePercentage: parseFloat(weeklyChangePercentage.toFixed(2)),
       weeklyGraphData,
     };
+  }
+
+  static async handleHeartbeat(deviceId: string) {
+    try {
+      const meter = await MeterRepo.findByDeviceId(deviceId);
+      if (!meter) return;
+
+      const wasOnline = meter.isOnline;
+      await MeterRepo.updateConnectivity(deviceId, true);
+
+      if (!wasOnline && meter.userId) {
+        const user = await this.userRepo.findById(meter.userId);
+        if (user) {
+          EmailService.sendEmail({
+            to: user.email,
+            subject: "Meter Back Online - Abitto Energy",
+            template: "meter-online",
+            context: {
+              firstName: user.firstName,
+              meterNumber: meter.meterNumber || deviceId,
+            },
+          }).catch(err => logger.error(`Failed to send meter online email: ${err.message}`));
+
+          await NotificationService.createNotification(user.id, {
+            title: "Meter Online",
+            description: `Your meter ${meter.meterNumber || deviceId} is now online.`,
+            category: "METER",
+          }).catch(err => logger.error(`Failed to create online notification: ${err.message}`));
+        }
+      }
+    } catch (error: any) {
+      logger.error(`Error handling heartbeat for ${deviceId}:`, error);
+    }
+  }
+
+  static async checkConnectivity() {
+    try {
+      const thresholdSeconds = 20;
+      const offlineMeters = await MeterRepo.getOfflineMeters(thresholdSeconds);
+
+      if (offlineMeters.length === 0) return;
+
+      logger.info(`Detected ${offlineMeters.length} offline meters`);
+
+      for (const meter of offlineMeters) {
+        await MeterRepo.updateConnectivity(meter.deviceId, false);
+
+        if (meter.userId) {
+          const user = await this.userRepo.findById(meter.userId);
+          if (user) {
+            EmailService.sendEmail({
+              to: user.email,
+              subject: "Meter Offline Alert - Abitto Energy",
+              template: "meter-offline",
+              context: {
+                firstName: user.firstName,
+                meterNumber: meter.meterNumber || meter.deviceId,
+              },
+            }).catch(err => logger.error(`Failed to send meter offline email: ${err.message}`));
+
+            await NotificationService.createNotification(user.id, {
+              title: "Meter Offline",
+              description: `We haven't heard from your meter ${meter.meterNumber || meter.deviceId} in a while. It appears to be offline.`,
+              category: "METER",
+            }).catch(err => logger.error(`Failed to create offline notification: ${err.message}`));
+          }
+        }
+      }
+    } catch (error: any) {
+      logger.error("Error checking connectivity:", error);
+    }
   }
 }
