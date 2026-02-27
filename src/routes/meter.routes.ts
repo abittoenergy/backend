@@ -19,6 +19,7 @@ MeterRouter.get("/registration/:meterNumber", meterRateLimiter, MeterController.
 MeterRouter.get("/", meterRateLimiter, AuthMiddleware.protect, MeterController.getUsersMeters);
 MeterRouter.get("/details/:id", meterRateLimiter, AuthMiddleware.protect, MeterController.getMeterDetails);
 MeterRouter.get("/stats/:id", meterRateLimiter, AuthMiddleware.protect, MeterController.getMeterStats);
+MeterRouter.get("/:id/usage", meterRateLimiter, AuthMiddleware.protect, MeterController.getUsageHistory);
 MeterRouter.get("/link/:meterNumber", meterRateLimiter, AuthMiddleware.protect, MeterController.checkMeterRegistration);
 MeterRouter.post("/link/:meterNumber", meterRateLimiter, AuthMiddleware.protect, MeterController.requestMeterLink);
 MeterRouter.post("/gift", meterRateLimiter, AuthMiddleware.protect, MeterController.giftGas);

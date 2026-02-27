@@ -113,4 +113,37 @@ export class GasUsageAuditRepository {
       percentageChangeUsage: parseFloat(percentageChangeUsage.toFixed(2)),
     };
   }
+
+  async getPaginatedDailyUsage(meterId: string, page: number = 1, limit: number = 10) {
+    const offset = (page - 1) * limit;
+
+    const data = await this.db
+      .select({
+        date: sql<string>`date_trunc('day', ${gasUsageAudits.createdAt})::date`,
+        kgUsed: sql<string>`sum(${gasUsageAudits.kgUsed})`,
+        durationMinutes: sql<number>`count(*)`
+      })
+      .from(gasUsageAudits)
+      .where(eq(gasUsageAudits.meterId, meterId))
+      .groupBy(sql`date_trunc('day', ${gasUsageAudits.createdAt})::date`)
+      .orderBy(desc(sql`date_trunc('day', ${gasUsageAudits.createdAt})::date`))
+      .limit(limit)
+      .offset(offset);
+
+    const [totalResult] = await this.db
+      .select({ count: sql<number>`count(distinct date_trunc('day', ${gasUsageAudits.createdAt})::date)` })
+      .from(gasUsageAudits)
+      .where(eq(gasUsageAudits.meterId, meterId));
+
+    return {
+      results: data.map(r => ({
+        date: new Date(r.date).toISOString().split('T')[0],
+        kgUsed: parseFloat(r.kgUsed),
+        duration: `${r.durationMinutes} mins`
+      })),
+      total: Number(totalResult.count),
+      page,
+      limit
+    };
+  }
 }

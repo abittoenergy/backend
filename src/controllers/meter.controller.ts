@@ -5,6 +5,8 @@ import ResponseHelper from "../utils/helpers/response.helper";
 import MeterService from "../services/meter.service";
 import { GasTransferService } from "../services/gas-transfer.service";
 import MeterValidator from "../validators/meter.validator";
+import { MeterRepo } from "../repository/meter";
+import { GasUsageAuditRepository } from "../repository/gas-usage-audit.repo";
 
 export default class MeterController {
 
@@ -254,6 +256,30 @@ export default class MeterController {
 
     ResponseHelper.sendSuccessResponse(res, {
       message: "Gas gifted successfully",
+      data,
+    });
+  });
+
+  static getUsageHistory = ControllerHelper.createHandler("get-usage-history", async (req, res, next) => {
+    const meterId = req.params.id;
+    const { id: userId } = (req as any).user;
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+
+    const result = await MeterRepo.findById(meterId);
+    if (!result) {
+      return next(new AppError("Meter not found", ResponseHelper.RESOURCE_NOT_FOUND));
+    }
+
+    if (result.meters.userId !== userId) {
+      return next(new AppError("You do not have permission to view this meter's usage", ResponseHelper.FORBIDDEN));
+    }
+
+    const gasUsageAuditRepo = new GasUsageAuditRepository();
+    const data = await gasUsageAuditRepo.getPaginatedDailyUsage(meterId, page, limit);
+
+    ResponseHelper.sendSuccessResponse(res, {
+      message: "Usage history retrieved successfully",
       data,
     });
   });
