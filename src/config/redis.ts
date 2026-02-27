@@ -6,6 +6,8 @@ import envConfig from "./env";
 import DailyQueue from "../queues/daily.queue";
 import DVACheckerQueue from "../queues/dva-checker.queue";
 import { withOperationContext } from "../utils/loggerWithContext";
+import { GasUsageAggregationService } from "../services/gas-usage-aggregation.service";
+
 export default class RedisManager {
     private static instance: RedisManager;
     private client: RedisClient | null = null;
@@ -222,6 +224,18 @@ export default class RedisManager {
                     })
                 );
             }
+
+            // Schedule Gas Usage Aggregation Flush
+            const flushInterval = envConfig.redis.gasUsageReportInterval || 60;
+            setInterval(async () => {
+                const refreshed = await this.client!.set(leaderKey, String(process.pid), "EX", 120, "XX");
+                if (refreshed === "OK") {
+                    await GasUsageAggregationService.flushAllMetrics();
+                }
+            }, flushInterval * 1000);
+
+            logger.info(`Gas usage aggregation flush scheduled every ${flushInterval}s`);
+
         } catch (err: any) {
             logger.error(
                 "scheduleJobs() failed",

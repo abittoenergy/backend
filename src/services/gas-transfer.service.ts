@@ -1,4 +1,5 @@
-import { eq, and, sql } from "drizzle-orm";
+
+import { GasUsageAggregationService } from "./gas-usage-aggregation.service";
 import { getDb, DbClient } from "../config/db";
 import { MeterRepo } from "../repository/meter";
 import { GasTransferRepository } from "../repository/gas-transfer.repo";
@@ -81,9 +82,12 @@ export class GasTransferService {
     const totalWorth = amountKg * gasPriceAtTime;
 
     return await this.db.transaction(async (tx) => {
-      await this.meterRepo.updateGasBalance(sourceMeter.id, -amountKg, tx);
+      const newSourceBalance = await this.meterRepo.updateGasBalance(sourceMeter.id, -amountKg, tx);
+      const newTargetBalance = await this.meterRepo.updateGasBalance(targetMeter.id, amountKg, tx);
 
-      await this.meterRepo.updateGasBalance(targetMeter.id, amountKg, tx);
+      await GasUsageAggregationService.syncBalanceToRedis(sourceMeter.deviceId, newSourceBalance);
+      await GasUsageAggregationService.syncBalanceToRedis(targetMeter.deviceId, newTargetBalance);
+
 
       const transfer = await this.gasTransferRepo.create({
         senderId,
@@ -100,7 +104,7 @@ export class GasTransferService {
         amount: 0, // No monetary value as it is a gas gift
         type: "GAS_TRANSFER" as any,
         status: "SUCCESS",
-        description: `Gifted ${amountKg}kg gas to meter ${recipientMeterNumber}`,
+        description: `Gifted ${amountKg}kg gas to meter ${recipientMeterNumber} `,
         metadata: {
           transferId: transfer.id,
           type: "outgoing",
@@ -116,7 +120,7 @@ export class GasTransferService {
         amount: 0,
         type: "GAS_TRANSFER" as any,
         status: "SUCCESS",
-        description: `Received ${amountKg}kg gas from ${sender.firstName} ${sender.lastName}`,
+        description: `Received ${amountKg}kg gas from ${sender.firstName} ${sender.lastName} `,
         metadata: {
           transferId: transfer.id,
           type: "incoming",
@@ -176,7 +180,7 @@ export class GasTransferService {
         subject: "Gas Gift Successfully Sent - Abitto Energy",
         template: "gas-gift-sent",
         context: {
-          recipientName: `${recipient.firstName} ${recipient.lastName}`,
+          recipientName: `${recipient.firstName} ${recipient.lastName} `,
           amountKg,
           targetMeter,
           sourceMeter,
@@ -187,7 +191,7 @@ export class GasTransferService {
         subject: "Gas Gift Received - Abitto Energy",
         template: "gas-gift-received",
         context: {
-          senderName: `${sender.firstName} ${sender.lastName}`,
+          senderName: `${sender.firstName} ${sender.lastName} `,
           amountKg,
           targetMeter,
         },

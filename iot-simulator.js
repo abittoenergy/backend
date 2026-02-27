@@ -88,19 +88,18 @@ function main() {
     writeLog(logFilePath, text);
   };
 
-  const client = mqtt.connect(brokerUrl, {
-    clientId: `${clientId || 'abitto-sim'}-${Math.random().toString(16).slice(2, 8)}`,
-    username: username || undefined,
-    password: password || undefined,
-    clean: true,
-    reconnectPeriod: 5000,
-    protocol: 'mqtts',
-    port: 8883,
-    connectTimeout: 30 * 1000, // Added for cloud stability
-    rejectUnauthorized: true   // Required for most cloud brokers like HiveMQ
-  });
+const client = mqtt.connect(brokerUrl, {
+  clientId: `${clientId || 'abitto-sim'}-${Math.random().toString(16).slice(2, 8)}`,
+  username: username || undefined,
+  password: password || undefined,
+  clean: true,
+  reconnectPeriod: 5000,
+  protocol: protocol, 
+  port: port ? parseInt(port) : 1883, 
+  connectTimeout: 30 * 1000,
+  rejectUnauthorized: protocol === 'mqtts' 
+});
 
-  // --- MQTT Handlers ---
 
   client.on('connect', () => {
     log('✓ Connected to MQTT broker');

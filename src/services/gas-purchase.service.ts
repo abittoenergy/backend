@@ -17,6 +17,7 @@ import { WalletRepository } from "../repository/wallet";
 import MeterService from "./meter.service";
 import NotificationService from "./notification.service";
 import { getRedisClient } from "../config/redis";
+import { GasUsageAggregationService } from "./gas-usage-aggregation.service";
 
 export default class GasPurchaseService {
   private static gasPurchaseRepo = new GasPurchaseRepository();
@@ -226,6 +227,9 @@ export default class GasPurchaseService {
       // 8. Update meter's availableGasKg
       const newGasBalance = await MeterRepo.updateGasBalance(meterId, kgPurchased, tx);
 
+      // Sync to Redis
+      await GasUsageAggregationService.syncBalanceToRedis(meter.deviceId, newGasBalance);
+
       // Post-transaction notifications
       this.sendPurchaseNotificationToDevice(purchase.id, newGasBalance).catch((err) => {
         logger.error("Failed to send device notification for wallet purchase", { error: err.message, purchaseId: purchase.id });
@@ -270,6 +274,12 @@ export default class GasPurchaseService {
 
       const newBalance = await MeterRepo.updateGasBalance(purchase.meterId, parseFloat(purchase.kgPurchased));
 
+      // Sync to Redis
+      const meter = await MeterRepo.findById(purchase.meterId);
+      if (meter) {
+        await GasUsageAggregationService.syncBalanceToRedis(meter.meters.deviceId, newBalance);
+      }
+
       await this.gasPurchaseRepo.markRefillCompleted(purchase.id, purchase.kgPurchased);
 
       this.sendPurchaseNotificationToDevice(purchase.id, newBalance).catch((error) => {
@@ -310,72 +320,11 @@ export default class GasPurchaseService {
    */
   static async handleGasUsage(deviceId: string, kgUsed: number): Promise<void> {
     try {
-      // Rate limiting: Prevent spamming from IoT devices
-      const redisKey = `ratelimit:usage:${deviceId}`;
-      const redis = await getRedisClient();
-      const isRateLimited = await redis.get(redisKey);
+      await GasUsageAggregationService.reportUsage(deviceId, kgUsed);
 
-      if (isRateLimited) {
-        logger.debug(`Gas usage report rate limited for device: ${deviceId}. Skipping.`, { deviceId });
-        return;
-      }
-
-
-      await redis.set(redisKey, "1", "EX", envConfig.redis.gasUsageReportInterval);
-
-      const meter = await MeterRepo.findByDeviceId(deviceId);
-      if (!meter || !meter.userId) {
-        logger.warn(`Usage reported for unknown or unlinked meter: ${deviceId}`);
-        return;
-      }
-
-      const previousBalance = parseFloat(meter.availableGasKg || "0");
-      let actualKgUsed = kgUsed;
-
-      if (previousBalance <= 0) {
-        logger.warn(`Usage reported for meter with zero/negative balance: ${deviceId}`, {
-          deviceId,
-          previousBalance,
-          kgUsed,
-        });
-        await MeterService.closeValve(deviceId);
-        return;
-      }
-
-      if (kgUsed > previousBalance) {
-        logger.warn(`Usage exceeds balance for meter ${deviceId}. Capping usage from ${kgUsed}kg to ${previousBalance}kg`, {
-          deviceId,
-          previousBalance,
-          kgUsed,
-        });
-        actualKgUsed = previousBalance;
-      }
-
-      const newBalance = await MeterRepo.updateGasBalance(meter.id, -actualKgUsed);
-
-      await this.gasUsageAuditRepo.create({
-        userId: meter.userId,
-        meterId: meter.id,
-        deviceId: deviceId,
-        kgUsed: actualKgUsed.toFixed(3),
-        previousBalance: previousBalance.toFixed(3),
-        newBalance: newBalance.toFixed(3),
-        metadata: { timestamp: new Date(), requestedUsage: kgUsed.toFixed(3) },
-      });
-
-      if (newBalance <= 0) {
-        await MeterService.closeValve(deviceId);
-        await this.sendExhaustedBalanceNotification(meter.id).catch((err) =>
-          logger.error("Failed to send exhausted balance notification:", err)
-        );
-      }
-
-      logger.info(`Gas usage processed and audited`, {
+      logger.info(`Gas usage buffered for device: ${deviceId}`, {
         deviceId,
-        userId: meter.userId,
         kgUsed,
-        previousBalance,
-        newBalance,
       });
     } catch (error: any) {
       logger.error("Failed to handle gas usage report", {
