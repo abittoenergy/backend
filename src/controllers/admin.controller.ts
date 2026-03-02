@@ -12,4 +12,14 @@ export class AdminController {
       data: stats,
     });
   });
+
+  static getRecentActivity = ControllerHelper.createHandler("get-recent-activity", async (req: Request, res: Response, next: NextFunction) => {
+    const limit = parseInt(req.query.limit as string || "10", 10);
+    const activities = await AdminService.getRecentActivity(limit);
+
+    ResponseHelper.sendSuccessResponse(res, {
+      message: "Recent activities retrieved successfully",
+      data: activities,
+    });
+  });
 }

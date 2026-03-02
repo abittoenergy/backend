@@ -11,4 +11,11 @@ AdminRouter.get(
   AdminController.getStats
 );
 
+AdminRouter.get(
+  "/activities",
+  AuthMiddleware.protect,
+  AuthMiddleware.restrictTo("admin", "super-admin"),
+  AdminController.getRecentActivity
+);
+
 export default AdminRouter;
