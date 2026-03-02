@@ -3,6 +3,8 @@ import { NewNotification } from "../db/schema/notifications.schema";
 import AppError from "../utils/appError";
 import ResponseHelper from "../utils/helpers/response.helper";
 import logger from "../config/logger";
+import { notificationEvents } from "../events/notification.events";
+import { UserRepository } from "../repository/user";
 
 export type NotificationCategory = "WALLET" | "GAS_PURCHASE" | "METER" | "ACCOUNT" | "SYSTEM";
 
@@ -28,7 +30,9 @@ export default class NotificationService {
         isRead: false,
       };
 
-      await this.notificationRepo.create(notificationData);
+      const notification = await this.notificationRepo.create(notificationData);
+
+      notificationEvents.emitCreated(notification);
 
       logger.info("Notification created", {
         userId,
@@ -154,6 +158,32 @@ export default class NotificationService {
         userId,
       });
       throw new AppError("Failed to retrieve unread count", ResponseHelper.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  /**
+   * Notify all admin users
+   */
+  static async notifyAdmins(data: CreateNotificationData): Promise<void> {
+    try {
+      const userRepo = new UserRepository();
+      const admins = await userRepo.findAllAdmins();
+
+      if (admins.length === 0) {
+        logger.warn("No admins found to notify");
+        return;
+      }
+
+      logger.info(`Broadcasting notification to ${admins.length} admins`, { title: data.title });
+
+      await Promise.all(
+        admins.map((admin) => this.createNotification(admin.id, data))
+      );
+    } catch (error: any) {
+      logger.error("Failed to notify admins", {
+        error: error.message,
+        data,
+      });
     }
   }
 }

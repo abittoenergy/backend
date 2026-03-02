@@ -145,6 +145,14 @@ export default class MeterService {
       logger.error("Failed to send user confirmation email:", error);
     });
 
+    await NotificationService.notifyAdmins({
+      title: "New Meter Link Request",
+      description: `${user.firstName} ${user.lastName} requested to link meter ${meter.meterNumber}`,
+      category: "SYSTEM",
+    }).catch((error) => {
+      logger.error("Failed to notify admins of new link request:", error);
+    });
+
     return request;
   }
 
@@ -535,6 +543,13 @@ export default class MeterService {
             description: `Your meter ${meter.meterNumber || deviceId} is now online.`,
             category: "METER",
           }).catch(err => logger.error(`Failed to create online notification: ${err.message}`));
+
+          // Notify admins
+          await NotificationService.notifyAdmins({
+            title: "Meter Back Online",
+            description: `Meter ${meter.meterNumber || deviceId} (User: ${user.email}) is back online.`,
+            category: "SYSTEM",
+          }).catch(err => logger.error(`Failed to notify admins of meter online: ${err.message}`));
         }
       }
     } catch (error: any) {
@@ -572,6 +587,13 @@ export default class MeterService {
               description: `We haven't heard from your meter ${meter.meterNumber || meter.deviceId} in a while. It appears to be offline.`,
               category: "METER",
             }).catch(err => logger.error(`Failed to create offline notification: ${err.message}`));
+
+            // Notify admins
+            await NotificationService.notifyAdmins({
+              title: "Meter Offline Alert",
+              description: `Meter ${meter.meterNumber || meter.deviceId} (User: ${user.email}) has gone offline.`,
+              category: "SYSTEM",
+            }).catch(err => logger.error(`Failed to notify admins of meter offline: ${err.message}`));
           }
         }
       }

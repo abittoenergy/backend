@@ -8,6 +8,9 @@ const NotificationRouter = express.Router();
 // All routes require authentication
 NotificationRouter.use(AuthMiddleware.protect);
 
+// SSE stream for real-time notifications
+NotificationRouter.get("/stream", NotificationController.stream);
+
 // Get unread count (must be before /:id routes)
 NotificationRouter.get("/unread-count", notificationRateLimiter, NotificationController.getUnreadCount);
 

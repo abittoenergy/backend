@@ -1,6 +1,7 @@
 import ControllerHelper from "../utils/helpers/controller.helper";
 import ResponseHelper from "../utils/helpers/response.helper";
 import NotificationService from "../services/notification.service";
+import { notificationEvents } from "../events/notification.events";
 import { notificationQuerySchema, notificationIdSchema } from "../validators/notification.validator";
 
 export default class NotificationController {
@@ -111,4 +112,43 @@ export default class NotificationController {
       data: { count },
     });
   });
+
+  /**
+   * SSE stream for real-time notifications
+   * GET /api/notifications/stream
+   */
+  static stream = (req: any, res: any) => {
+    const userId = (req as any).user!.id;
+
+    // Set SSE headers
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    });
+
+    // Send initial heartbeat
+    res.write(':\n\n');
+
+    const handler = (notification: any) => {
+      // Only send if the notification belongs to the user
+      if (notification.userId === userId) {
+        res.write(`data: ${JSON.stringify(notification)}\n\n`);
+      }
+    };
+
+    // Subscribe to events
+    notificationEvents.onCreated(handler);
+
+    // Heartbeat to keep connection alive
+    const heartbeat = setInterval(() => {
+      res.write(':\n\n');
+    }, 30000);
+
+    // Cleanup on close
+    req.on('close', () => {
+      clearInterval(heartbeat);
+      notificationEvents.removeCreatedHandler(handler);
+    });
+  };
 }

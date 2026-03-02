@@ -142,6 +142,15 @@ export class UserRepository {
         };
     }
 
-
-};
-
+    async findAllAdmins(): Promise<User[]> {
+        return await this.db
+            .select()
+            .from(users)
+            .where(
+                or(
+                    eq(users.role, "admin" as any),
+                    eq(users.role, "super-admin" as any)
+                )
+            );
+    }
+}
