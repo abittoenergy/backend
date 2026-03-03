@@ -14,6 +14,8 @@ import { GasUsageAuditRepository } from "../repository/gas-usage-audit.repo";
 import logger from "../config/logger";
 import NotificationService from "./notification.service";
 import mqttService from "./mqtt.service";
+import { LeakReportRepo } from "../repository/leak-report.repo";
+import { LeakReportStatus } from "../db/schema/leak-reports.schema";
 
 export default class MeterService {
 
@@ -230,7 +232,6 @@ export default class MeterService {
     if (user && result) {
       const meter = result.meters;
       // Create in-app notification
-      const NotificationService = (await import("./notification.service")).default;
 
       if (status === LinkRequestStatus.APPROVED) {
         await NotificationService.createNotification(user.id, {
@@ -327,7 +328,6 @@ export default class MeterService {
       const user = await this.userRepo.findById(originalUserId);
       if (user) {
         // Create in-app notification
-        const NotificationService = (await import("./notification.service")).default;
         await NotificationService.createNotification(user.id, {
           title: "Meter Unlinked",
           description: `Meter ${meter.meterNumber || meter.deviceId} has been unlinked from your account`,
@@ -398,8 +398,109 @@ export default class MeterService {
 
       await MeterRepo.updateValveStatus(deviceId, valveStatus);
       logger.info(`Valve status updated for meter ${deviceId}: ${valveStatus ? "OPEN" : "CLOSED"}`);
+
+      if (valveStatus) {
+        const unresolvedLeak = await LeakReportRepo.findUnresolvedByDeviceId(deviceId);
+        if (unresolvedLeak) {
+          // Notify admins of unsafe operation reported by device
+          await NotificationService.notifyAdmins({
+            title: "Unsafe Valve State Detected",
+            description: `Valve for meter ${meter.meterNumber || deviceId} is OPEN while a leak is unresolved.`,
+            category: "SYSTEM",
+          }).catch(err => logger.error(`Failed to notify admins of unsafe valve state: ${err.message}`));
+
+          EmailService.sendEmail({
+            to: envConfig.admin.adminEmail!,
+            subject: "Alert: Unsafe Valve State Detected - Abitto Energy",
+            template: "unresolved-leak-valve-open-admin",
+            context: {
+              meterNumber: meter.meterNumber || deviceId,
+              deviceId,
+              userId: meter.userId || "N/A",
+            },
+          }).catch(err => logger.error(`Failed to send unsafe valve state email: ${err.message}`));
+        }
+      }
     } catch (error: any) {
       logger.error(`Failed to handle valve status update for ${deviceId}:`, error);
+    }
+  }
+
+  static async handleLeakDetected(deviceId: string) {
+    try {
+      const meter = await MeterRepo.findByDeviceId(deviceId);
+      if (!meter) {
+        logger.warn(`Leak detection report for unknown meter: ${deviceId}`);
+        return;
+      }
+
+      const existingLeak = await LeakReportRepo.findUnresolvedByDeviceId(deviceId);
+
+      if (existingLeak) {
+        logger.info(`Leak already active for meter ${deviceId}`);
+        return;
+      }
+
+      const report = await LeakReportRepo.create({
+        meterId: meter.id,
+        deviceId: meter.deviceId,
+        userId: meter.userId,
+        status: LeakReportStatus.DETECTED,
+      });
+
+      await LeakReportRepo.createAudit({
+        reportId: report.id,
+        meterId: meter.id,
+        action: "LEAK_DETECTED",
+        details: { deviceId },
+      });
+
+      // 1. Close the valve immediately
+      await this.closeValve(deviceId);
+
+      // 2. Notify admins
+      await NotificationService.notifyAdmins({
+        title: "LEAK DETECTED!",
+        description: `Leak detected on meter ${meter.meterNumber || deviceId}. Valve has been closed.`,
+        category: "SYSTEM",
+      }).catch(err => logger.error(`Failed to notify admins of leak: ${err.message}`));
+
+      EmailService.sendEmail({
+        to: envConfig.admin.adminEmail!,
+        subject: "URGENT: Leak Detected - Abitto Energy",
+        template: "leak-detected-admin",
+        context: {
+          meterNumber: meter.meterNumber || deviceId,
+          deviceId: meter.deviceId,
+          userName: meter.userId ? "Registered User" : "Unlinked Meter",
+        },
+      }).catch(err => logger.error(`Failed to send leak notification to admin: ${err.message}`));
+
+      // 3. Notify user if linked
+      if (meter.userId) {
+        const user = await this.userRepo.findById(meter.userId);
+        if (user) {
+          EmailService.sendEmail({
+            to: user.email,
+            subject: "Urgent: Gas Leak Detected - Valve Closed",
+            template: "leak-detected-user",
+            context: {
+              firstName: user.firstName,
+              meterNumber: meter.meterNumber || deviceId,
+            },
+          }).catch(err => logger.error(`Failed to send leak notification to user: ${err.message}`));
+
+          await NotificationService.createNotification(user.id, {
+            title: "Gas Leak Detected",
+            description: `A gas leak was detected on your meter ${meter.meterNumber || deviceId}. The valve has been automatically closed for your safety.`,
+            category: "METER",
+          }).catch(err => logger.error(`Failed to create leak notification for user: ${err.message}`));
+        }
+      }
+
+      logger.info(`Leak detection handled for meter ${deviceId}`);
+    } catch (error: any) {
+      logger.error(`Error handling leak detection for ${deviceId}:`, error);
     }
   }
 
@@ -416,6 +517,31 @@ export default class MeterService {
     }
 
     const newValveStatus = !meter.valveStatus;
+
+    if (newValveStatus) {
+      const unresolvedLeak = await LeakReportRepo.findUnresolvedByDeviceId(meter.deviceId);
+      if (unresolvedLeak) {
+        // Notify admins of unsafe operation
+        await NotificationService.notifyAdmins({
+          title: "Unsafe Valve Operation Request",
+          description: `User ${userId} attempted to open valve for meter ${meter.meterNumber || meter.deviceId} while a leak is unresolved.`,
+          category: "SYSTEM",
+        }).catch(err => logger.error(`Failed to notify admins of unsafe valve open: ${err.message}`));
+
+        EmailService.sendEmail({
+          to: envConfig.admin.adminEmail!,
+          subject: "Unsafe Valve Operation - Abitto Energy",
+          template: "unresolved-leak-valve-open-admin",
+          context: {
+            meterNumber: meter.meterNumber || meter.deviceId,
+            deviceId: meter.deviceId,
+            userId,
+          },
+        }).catch(err => logger.error(`Failed to send unsafe valve open email: ${err.message}`));
+
+        throw new AppError("Cannot open valve while a leak is unresolved. Please contact support.", ResponseHelper.BAD_REQUEST);
+      }
+    }
 
     mqttService.sendCommand(meter.deviceId, {
       commandId: `valve_control_${Date.now()}`,

@@ -10,5 +10,5 @@ export * from "./wallets.schema";
 export * from "./transactions.schema";
 export * from "./system-settings.schema";
 export * from "./dedicated-virtual-accounts.schema";
-export * from "./gas-purchases.schema";
-export * from "./gas-transfers.schema";
+export * from "./gas-usage-audits.schema";
+export * from "./leak-reports.schema";

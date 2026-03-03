@@ -521,7 +521,6 @@ export default class GasPurchaseService {
         },
       });
 
-      const NotificationService = (await import("./notification.service")).default;
       await NotificationService.createNotification(purchase.userId, {
         title: "Gas Purchase Successful",
         description: `${purchase.kgPurchased} kg of gas has been added to your available balance. New balance: ${newBalance?.toFixed(3) || parseFloat(meter.availableGasKg || "0").toFixed(3)} kg.`,

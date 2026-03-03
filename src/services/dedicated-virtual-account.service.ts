@@ -6,6 +6,7 @@ import AppError from "../utils/appError";
 import ResponseHelper from "../utils/helpers/response.helper";
 import logger from "../config/logger";
 import envConfig from "../config/env";
+import NotificationService from "./notification.service";
 
 export class DedicatedVirtualAccountService {
   private static dvaRepo = new DedicatedVirtualAccountRepository();
@@ -215,7 +216,6 @@ export class DedicatedVirtualAccountService {
       });
 
       // Create in-app notification
-      const NotificationService = (await import("./notification.service")).default;
       await NotificationService.createNotification(userId, {
         title: "Virtual Account Ready",
         description: `Your dedicated account ${dvaData.account_number} is now active for wallet funding`,

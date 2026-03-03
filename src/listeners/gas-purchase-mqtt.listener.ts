@@ -34,6 +34,13 @@ export function initializeGasPurchaseMqttListener(): void {
         MeterService.handleValveStatusUpdate(data.deviceId, valveStatus);
       }
 
+      // Check for leak detection
+      if (data.data.leakDetected === true) {
+        MeterService.handleLeakDetected(data.deviceId).catch(err =>
+          logger.error(`Failed to handle leak detection for ${data.deviceId}`, err)
+        );
+      }
+
 
     } catch (error: any) {
       logger.error("Error processing MQTT device data", {

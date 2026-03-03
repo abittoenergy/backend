@@ -1,8 +1,9 @@
 import { eq, or, ilike, and, sql, desc, gte, getTableColumns, isNull, isNotNull } from "drizzle-orm";
 import { getDb } from "../config/db";
 import { users, User, NewUser } from "../db/schema/users.schema";
-import { meters, gasPurchases, GasPurchaseStatus } from "../db/schema";
+import { meters} from "../db/schema";
 import { DbClient } from "../config/db";
+import { gasPurchases, GasPurchaseStatus } from "../db/schema/gas-purchases.schema";
 
 export interface AdminUserQueryOptions {
     page?: number;
