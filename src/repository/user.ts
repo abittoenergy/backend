@@ -1,7 +1,7 @@
 import { eq, or, ilike, and, sql, desc, gte, getTableColumns, isNull, isNotNull } from "drizzle-orm";
 import { getDb } from "../config/db";
-import { users, User, NewUser } from "../db/schema/users.schema";
-import { meters} from "../db/schema";
+import { users, User, NewUser, Role } from "../db/schema/users.schema";
+import { meters, adminRoles } from "../db/schema";
 import { DbClient } from "../config/db";
 import { gasPurchases, GasPurchaseStatus } from "../db/schema/gas-purchases.schema";
 
@@ -149,9 +149,64 @@ export class UserRepository {
             .from(users)
             .where(
                 or(
-                    eq(users.role, "admin" as any),
-                    eq(users.role, "super-admin" as any)
+                    eq(users.role, Role.ADMIN),
+                    eq(users.role, Role.SUPER_ADMIN),
+                    eq(users.role, Role.INSTALLER)
                 )
             );
+    }
+
+    async findAllAdminsWithRoles(excludeUserId?: string) {
+        const conditions = [
+            or(
+                eq(users.role, Role.ADMIN),
+                eq(users.role, Role.SUPER_ADMIN),
+                eq(users.role, Role.INSTALLER)
+            )
+        ];
+
+        if (excludeUserId) {
+            conditions.push(sql`${users.id} != ${excludeUserId}`);
+        }
+
+        const { passwordHash, ...userColumns } = getTableColumns(users);
+
+        return await this.db
+            .select({
+                ...userColumns,
+                adminRoleName: adminRoles.name,
+            })
+            .from(users)
+            .leftJoin(adminRoles, eq(users.adminRoleId, adminRoles.id))
+            .where(and(...conditions))
+            .orderBy(desc(users.createdAt));
+    }
+
+    async findAdminById(id: string) {
+        const { passwordHash, ...userColumns } = getTableColumns(users);
+        const [result] = await this.db
+            .select({
+                ...userColumns,
+                adminRoleName: adminRoles.name,
+            })
+            .from(users)
+            .leftJoin(adminRoles, eq(users.adminRoleId, adminRoles.id))
+            .where(eq(users.id, id))
+            .limit(1);
+        return result;
+    }
+
+    async deleteAdmin(id: string) {
+        const [result] = await this.db
+            .update(users)
+            .set({
+                isArchived: true,
+                isActive: false,
+                archivedAt: new Date(),
+                archiveReason: "Admin user removed"
+            })
+            .where(eq(users.id, id))
+            .returning();
+        return result;
     }
 }

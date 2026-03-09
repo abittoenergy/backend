@@ -129,4 +129,41 @@ export default class AuthService {
       console.error("Failed to send password-changed email:", err);
     });
   }
+
+  async forgotPassword(email: string): Promise<string> {
+    const user = await this.userRepository.findByEmail(email);
+    if (!user) {
+      throw new AppError("If an account exists with this email, you will receive an OTP.", ResponseHelper.BAD_REQUEST);
+    }
+
+    return await OTPService.sendOTP(email, OTP_TYPES.FORGOT_PASSWORD);
+  }
+
+  async resetPassword(data: any): Promise<void> {
+    const { email, otp, newPassword } = data;
+
+    // Verify OTP first
+    await OTPService.verifyOTP(email, OTP_TYPES.FORGOT_PASSWORD, otp);
+
+    const user = await this.userRepository.findByEmail(email);
+    if (!user) {
+      throw new AppError("User not found", ResponseHelper.RESOURCE_NOT_FOUND);
+    }
+
+    const newPasswordHash = await AuthHelper.passwordToHash(newPassword);
+    await this.userRepository.update(user.id, { passwordHash: newPasswordHash });
+
+    // Send confirmation email
+    await EmailService.sendEmail({
+      to: email,
+      subject: "Password Reset Successfully",
+      template: "password-changed",
+      context: {
+        firstName: user.firstName || "User",
+        logoUrl: `${envConfig.baseUrl}/static/images/logo.png`,
+      },
+    }).catch(err => {
+      console.error("Failed to send password-reset confirmation email:", err);
+    });
+  }
 }

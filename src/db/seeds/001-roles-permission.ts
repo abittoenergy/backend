@@ -77,13 +77,16 @@ const PERMISSIONS = [
   { key: "support_template_view", description: "View support templates", category: "Support" },
   { key: "support_template_manage", description: "Manage support templates", category: "Support" },
 
-
+  // Meter Management
+  { key: "meter_list", description: "List all meters", category: "Meter Management" },
+  { key: "meter_link", description: "Link meters to users", category: "Meter Management" },
 ];
 
 const ROLES = {
   SUPER_ADMIN: "super-admin",
   ADMIN: "admin",
   SUPPORT: "support",
+  INSTALLER: "installer",
 };
 
 const GROUPS = {
@@ -118,6 +121,12 @@ const SUPPORT_PERMS = [
   ...TRANSACTION_PERMS,
 ];
 
+const INSTALLER_PERMS = [
+  "user_list",
+  "meter_list",
+  "meter_link",
+];
+
 const ADMIN_PERMS = PERMISSIONS.filter((p) => p.category !== "Groups" && p.category !== "Roles & Permissions").map(
   (p) => p.key
 );
@@ -150,6 +159,7 @@ const seed: { id: string; name: string; run: () => Promise<void>; dependsOn?: st
       { name: ROLES.SUPER_ADMIN, description: "Super Administrator with full access" },
       { name: ROLES.ADMIN, description: "Administrator with standard access" },
       { name: ROLES.SUPPORT, description: "Customer Support Specialist" },
+      { name: ROLES.INSTALLER, description: "Meter Installer with limited access" },
     ];
 
     for (const role of rolesToSync) {
@@ -215,6 +225,8 @@ const seed: { id: string; name: string; run: () => Promise<void>; dependsOn?: st
     await assign(ROLES.ADMIN, ADMIN_PERMS);
 
     await assign(ROLES.SUPPORT, SUPPORT_PERMS);
+
+    await assign(ROLES.INSTALLER, INSTALLER_PERMS);
 
 
     console.log("[001-roles-permissions] Ensuring default super admin...");

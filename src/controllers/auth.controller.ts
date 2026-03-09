@@ -88,4 +88,43 @@ export default class AuthController {
             next(error);
         }
     });
+
+    static forgotPassword = ControllerHelper.createHandler("forgot-password", async (req, res, next) => {
+        try {
+            const parsed = AuthValidator.forgotPassword(req.body);
+            if (!parsed.success) {
+                const message = parsed.error.errors?.[0]?.message || "Validation failed";
+                return next(new AppError(message, ResponseHelper.BAD_REQUEST));
+            }
+
+            const otp = await AuthController.authService.forgotPassword(parsed.data.email);
+
+            ResponseHelper.sendSuccessResponse(res, {
+                message: "OTP sent to your email for password reset",
+                data: {
+                    otp: process.env.NODE_ENV !== "production" ? otp : undefined,
+                }
+            });
+        } catch (error) {
+            next(error);
+        }
+    });
+
+    static resetPassword = ControllerHelper.createHandler("reset-password", async (req, res, next) => {
+        try {
+            const parsed = AuthValidator.resetPassword(req.body);
+            if (!parsed.success) {
+                const message = parsed.error.errors?.[0]?.message || "Validation failed";
+                return next(new AppError(message, ResponseHelper.BAD_REQUEST));
+            }
+
+            await AuthController.authService.resetPassword(parsed.data);
+
+            ResponseHelper.sendSuccessResponse(res, {
+                message: "Password reset successfully",
+            });
+        } catch (error) {
+            next(error);
+        }
+    });
 }

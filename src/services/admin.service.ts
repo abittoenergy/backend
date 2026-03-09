@@ -1,161 +1,200 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, and, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import db from "../config/db";
 import { users } from "../db/schema/users.schema";
 import { gasPurchases } from "../db/schema/gas-purchases.schema";
 import { gasTransfers } from "../db/schema/gas-transfers.schema";
 import { meterLinkRequests } from "../db/schema/meter-link-requests.schema";
-import { meters } from "../db/schema/meters.schema";
 import { UserRepository } from "../repository/user";
 import { TransactionRepository } from "../repository/transaction";
 import { MeterRepo } from "../repository/meter";
 import { GasPurchaseRepository } from "../repository/gas-purchase.repo";
-import { GasUsageAuditRepository } from "../repository/gas-usage-audit.repo";
+import { IncidentReportRepo } from "../repository/incident-report.repo";
+import { AdminInvitationService } from "./admin-invitation.service";
+import { adminRoles } from "../db/schema/admin/role.schema";
+import { Role } from "../db/schema/users.schema";
+import { GroupRepository } from "../repository/admin/group.repo";
+import AppError from "../utils/appError";
+import ResponseHelper from "../utils/helpers/response.helper";
 
 export interface PlatformActivity {
   id: string;
   type: "USER_REGISTRATION" | "GAS_PURCHASE" | "GAS_TRANSFER" | "METER_LINK_REQUEST";
   title: string;
   description: string;
-  status?: string;
-  userId?: string;
-  userName?: string;
+  userId: string;
+  userEmail: string;
+  amount?: string;
   createdAt: Date;
-  metadata?: any;
 }
 
 export class AdminService {
   private static userRepo = new UserRepository();
   private static transactionRepo = new TransactionRepository();
   private static gasPurchaseRepo = new GasPurchaseRepository();
-  private static gasUsageAuditRepo = new GasUsageAuditRepository();
+  private static groupRepo = new GroupRepository();
 
   static async getPlatformStats() {
-    const [userStats, transactionStats, meterStats, gasSoldStats, usageStats] = await Promise.all([
-      this.userRepo.getGlobalStats(),
-      this.transactionRepo.getAdminStats(),
-      MeterRepo.getStats(),
-      this.gasPurchaseRepo.getGlobalGasSoldStats(),
-      this.gasUsageAuditRepo.getGlobalUsageStats(7),
-    ]);
+    const userStats = await this.userRepo.getGlobalStats();
+    const meterStats = await MeterRepo.getStats();
+    const transactionStats = await this.transactionRepo.getAdminStats();
+    const gasStats = await this.gasPurchaseRepo.getGlobalGasSoldStats();
+    const activeIncidentsCount = await IncidentReportRepo.countUnresolved();
 
     return {
-      users: {
-        total: userStats.totalUsers,
-        increasePastMonth: userStats.userIncreasePastMonth,
-        joinedToday: userStats.joinedToday,
-        activeToday: userStats.activeToday,
-      },
-      revenue: {
-        total: transactionStats.totalRevenue.toString(),
-        today: transactionStats.totalRevenueToday.toString(),
-        processedLast24hrs: transactionStats.processedLast24hrs.toString(),
-      },
-      meters: {
-        total: meterStats.total,
-        active: meterStats.active,
-        registered: meterStats.registered,
-        unregistered: meterStats.unregistered,
-        linked: meterStats.linked,
-      },
-      gasSold: {
-        totalKg: gasSoldStats.totalGasSoldKg.toString(),
-        todayKg: gasSoldStats.totalGasSoldKgToday.toString(),
-      },
-      usage: {
-        totalKgThisWeek: usageStats.totalKgUsedThisWeek.toString(),
-        totalKgUsedToday: usageStats.totalKgUsedToday.toString(),
-        percentageChangePastWeek: usageStats.percentageChangeUsage,
-        chart: usageStats.usageChart,
-      }
+      totalUsers: userStats.totalUsers,
+      totalMeters: meterStats.total,
+      totalTransactions: transactionStats.totalTransactions,
+      totalGasPurchased: gasStats.totalGasSoldKg,
+      activeIncidents: activeIncidentsCount,
     };
   }
 
   static async getRecentActivity(limit: number = 10): Promise<PlatformActivity[]> {
-    const recipientAlias = alias(users, "recipient");
+    const activities: PlatformActivity[] = [];
 
-    const [recentUsers, recentPurchases, recentTransfers, recentRequests] = await Promise.all([
-      db.select().from(users).orderBy(desc(users.createdAt)).limit(limit),
-      db.select({
+    // 1. Recent user registrations
+    const recentUsers = await db.select().from(users).orderBy(desc(users.createdAt)).limit(limit);
+    recentUsers.forEach((user) => {
+      activities.push({
+        id: user.id,
+        type: "USER_REGISTRATION",
+        title: "New User Registered",
+        description: `${user.firstName} ${user.lastName} (${user.email})`,
+        userId: user.id,
+        userEmail: user.email,
+        createdAt: user.createdAt,
+      });
+    });
+
+    // 2. Recent gas purchases
+    const buyerAlias = alias(users, "buyer");
+    const recentPurchases = await db
+      .select({
         purchase: gasPurchases,
-        user: users,
-        meter: meters
+        user: buyerAlias,
       })
-        .from(gasPurchases)
-        .innerJoin(users, eq(gasPurchases.userId, users.id))
-        .innerJoin(meters, eq(gasPurchases.meterId, meters.id))
-        .orderBy(desc(gasPurchases.createdAt))
-        .limit(limit),
-      db.select({
-        transfer: gasTransfers,
-        sender: users,
-        recipient: recipientAlias
-      })
-        .from(gasTransfers)
-        .innerJoin(users, eq(gasTransfers.senderId, users.id))
-        .innerJoin(recipientAlias, eq(gasTransfers.recipientId, recipientAlias.id))
-        .orderBy(desc(gasTransfers.createdAt))
-        .limit(limit),
-      db.select({
-        request: meterLinkRequests,
-        user: users,
-        meter: meters
-      })
-        .from(meterLinkRequests)
-        .innerJoin(users, eq(meterLinkRequests.userId, users.id))
-        .innerJoin(meters, eq(meterLinkRequests.meterId, meters.id))
-        .orderBy(desc(meterLinkRequests.createdAt))
-        .limit(limit),
-    ]);
+      .from(gasPurchases)
+      .leftJoin(buyerAlias, eq(gasPurchases.userId, buyerAlias.id))
+      .orderBy(desc(gasPurchases.createdAt))
+      .limit(limit);
 
-    const activities: PlatformActivity[] = [
-      ...recentUsers.map(u => ({
-        id: u.id,
-        type: "USER_REGISTRATION" as const,
-        title: "New User Registration",
-        description: `${u.firstName} ${u.lastName} joined the platform.`,
-        userId: u.id,
-        userName: `${u.firstName} ${u.lastName}`,
-        createdAt: u.createdAt,
-      })),
-      ...recentPurchases.map(p => ({
+    recentPurchases.forEach((p) => {
+      activities.push({
         id: p.purchase.id,
-        type: "GAS_PURCHASE" as const,
-        title: "Gas Refill",
-        description: `${p.user.firstName} ${p.user.lastName} purchased ${p.purchase.kgPurchased}kg for Meter ${p.meter.meterNumber}.`,
-        status: p.purchase.status,
-        userId: p.user.id,
-        userName: `${p.user.firstName} ${p.user.lastName}`,
+        type: "GAS_PURCHASE",
+        title: "Gas Purchased",
+        description: `${p.purchase.kgPurchased}kg purchased`,
+        userId: p.purchase.userId,
+        userEmail: p.user?.email || "Unknown",
+        amount: (p.purchase.amountPaid / 100).toFixed(2).toString(), // Convert kobo to naira/main currency
         createdAt: p.purchase.createdAt,
-      })),
-      ...recentTransfers.map(t => {
-        const isSelf = t.transfer.senderId === t.transfer.recipientId;
-        const description = isSelf
-          ? `${t.sender.firstName} ${t.sender.lastName} moved ${t.transfer.amountKg}kg gas between their meters.`
-          : `${t.sender.firstName} ${t.sender.lastName} sent ${t.transfer.amountKg}kg gas to ${t.recipient.firstName} ${t.recipient.lastName}.`;
+      });
+    });
 
-        return {
-          id: t.transfer.id,
-          type: "GAS_TRANSFER" as const,
-          title: "Gas Gift",
-          description,
-          userId: t.sender.id,
-          userName: `${t.sender.firstName} ${t.sender.lastName}`,
-          createdAt: t.transfer.createdAt,
-        };
-      }),
-      ...recentRequests.map(r => ({
+    // 3. Recent gas transfers
+    const senderAlias = alias(users, "sender");
+    const recentTransfers = await db
+      .select({
+        transfer: gasTransfers,
+        sender: senderAlias,
+      })
+      .from(gasTransfers)
+      .leftJoin(senderAlias, eq(gasTransfers.senderId, senderAlias.id))
+      .orderBy(desc(gasTransfers.createdAt))
+      .limit(limit);
+
+    recentTransfers.forEach((t) => {
+      activities.push({
+        id: t.transfer.id,
+        type: "GAS_TRANSFER",
+        title: "Gas Transferred",
+        description: `${t.transfer.amountKg}kg sent to user ID ${t.transfer.recipientId}`,
+        userId: t.transfer.senderId,
+        userEmail: t.sender?.email || "Unknown",
+        createdAt: t.transfer.createdAt,
+      });
+    });
+
+    // 4. Recent meter link requests
+    const requesterAlias = alias(users, "requester");
+    const recentRequests = await db
+      .select({
+        request: meterLinkRequests,
+        user: requesterAlias,
+      })
+      .from(meterLinkRequests)
+      .leftJoin(requesterAlias, eq(meterLinkRequests.userId, requesterAlias.id))
+      .orderBy(desc(meterLinkRequests.createdAt))
+      .limit(limit);
+
+    recentRequests.forEach((r) => {
+      activities.push({
         id: r.request.id,
-        type: "METER_LINK_REQUEST" as const,
-        title: "Meter Link Request",
-        description: `${r.user.firstName} ${r.user.lastName} requested to link Meter ${r.meter.meterNumber}.`,
-        status: r.request.status,
-        userId: r.user.id,
-        userName: `${r.user.firstName} ${r.user.lastName}`,
+        type: "METER_LINK_REQUEST",
+        title: "Meter Link Requested",
+        description: `Request for status ${r.request.status}`,
+        userId: r.request.userId,
+        userEmail: r.user?.email || "Unknown",
         createdAt: r.request.createdAt,
-      })),
-    ];
+      });
+    });
 
     return activities.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, limit);
+  }
+
+  static async getAdminRoles() {
+    return await db.select().from(adminRoles).where(eq(adminRoles.isArchived, false));
+  }
+
+  static async getAdminGroups() {
+    return await this.groupRepo.findAll();
+  }
+
+  static async createAdminGroup(data: { name: string; description?: string }) {
+    const existing = await this.groupRepo.findByName(data.name);
+    if (existing) {
+      throw new AppError("Group name already exists", ResponseHelper.BAD_REQUEST);
+    }
+    return await this.groupRepo.create(data);
+  }
+
+  static async getAllAdmins(currentUserId: string) {
+    return await this.userRepo.findAllAdminsWithRoles(currentUserId);
+  }
+
+  static async updateAdminRole(id: string, adminRoleId: string, role?: Role) {
+    const data: any = { adminRoleId };
+    if (role) data.role = role;
+
+    return await this.userRepo.update(id, data);
+  }
+
+  static async deleteAdmin(id: string) {
+    return await this.userRepo.deleteAdmin(id);
+  }
+
+  static async sendAdminInvitation(email: string, roleId: string, invitedBy: string, groupId: string) {
+    return await AdminInvitationService.inviteAdmin(email, roleId, invitedBy, groupId);
+  }
+
+  static async verifyAdminInvitation(token: string) {
+    return await AdminInvitationService.verifyInvitation(token);
+  }
+
+  static async completeAdminSetup(tempToken: string, userData: any) {
+    return await AdminInvitationService.completeSetup(tempToken, userData);
+  }
+
+  static async acceptAdminInvitation(token: string, userData: any) {
+    return await AdminInvitationService.acceptInvitation(token, userData);
+  }
+
+  static async cancelAdminInvitation(id: string) {
+    return await AdminInvitationService.cancelInvitation(id);
+  }
+
+  static async getAllInvitations(options: any) {
+    return await AdminInvitationService.getAllInvitations(options);
   }
 }

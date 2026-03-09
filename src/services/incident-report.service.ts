@@ -6,14 +6,14 @@ import logger from "../config/logger";
 
 export default class IncidentReportService {
   static async getIncidentReports(query: {
-    page?: string;
-    limit?: string;
+    page?: string | number;
+    limit?: string | number;
     status?: IncidentReportStatus;
     type?: IncidentType;
     search?: string;
   }) {
-    const page = parseInt(query.page || "1", 10);
-    const limit = parseInt(query.limit || "20", 10);
+    const page = typeof query.page === "number" ? query.page : parseInt(query.page || "1", 10);
+    const limit = typeof query.limit === "number" ? query.limit : parseInt(query.limit || "20", 10);
 
     const { results, total } = await IncidentReportRepo.findAllAdmin({
       page,

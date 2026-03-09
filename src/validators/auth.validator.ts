@@ -66,7 +66,7 @@ export const updateProfileOnboardingSchema = z.object({
 });
 export type UpdateProfileOnboardingInput = z.infer<typeof updateProfileOnboardingSchema>;
 
-export const changePasswordSchema = z.object({
+export const changePasswordInputSchema = z.object({
     currentPassword: z.string({ required_error: "Current password is required" }),
     newPassword: passwordSchema,
     confirmPassword: z.string({ required_error: "Confirm password is required" }),
@@ -79,7 +79,28 @@ export const changePasswordSchema = z.object({
         });
     }
 });
-export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordInputSchema>;
+
+export const forgotPasswordSchema = z.object({
+    email: z.string({ required_error: "Email is required" }).email("Please provide a valid email address"),
+});
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z.object({
+    email: z.string({ required_error: "Email is required" }).email("Please provide a valid email address"),
+    otp: z.string({ required_error: "OTP is required" }),
+    newPassword: passwordSchema,
+    confirmPassword: z.string({ required_error: "Confirm password is required" }),
+}).superRefine((data, ctx) => {
+    if (data.newPassword !== data.confirmPassword) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "Passwords do not match",
+            path: ["confirmPassword"],
+        });
+    }
+});
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
 export default class AuthValidator {
 
@@ -99,7 +120,15 @@ export default class AuthValidator {
     }
 
     static changePassword(data: unknown) {
-        return changePasswordSchema.safeParse(data);
+        return changePasswordInputSchema.safeParse(data);
+    }
+
+    static forgotPassword(data: unknown) {
+        return forgotPasswordSchema.safeParse(data);
+    }
+
+    static resetPassword(data: unknown) {
+        return resetPasswordSchema.safeParse(data);
     }
 
 }

@@ -22,6 +22,7 @@ export enum Role {
     MERCHANT = "merchant",
     ADMIN = "admin",
     SUPER_ADMIN = "super-admin",
+    INSTALLER = "installer",
 }
 
 export const ROLES = Object.values(Role) as [Role, ...Role[]];

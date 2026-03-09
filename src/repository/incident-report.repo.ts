@@ -80,7 +80,7 @@ export class IncidentReportRepo {
       .select({
         report: incidentReports,
         meter: meters,
-        user: {firstname: users.firstName,lastname: users.lastName,email: users.email},
+        user: { firstname: users.firstName, lastname: users.lastName, email: users.email },
       })
       .from(incidentReports)
       .innerJoin(meters, eq(incidentReports.meterId, meters.id))
@@ -102,5 +102,13 @@ export class IncidentReportRepo {
   static async createAudit(data: NewIncidentAudit) {
     const [audit] = await db.insert(incidentAudits).values(data).returning();
     return audit;
+  }
+
+  static async countUnresolved() {
+    const [{ count }] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(incidentReports)
+      .where(eq(incidentReports.status, IncidentReportStatus.DETECTED));
+    return Number(count);
   }
 }
