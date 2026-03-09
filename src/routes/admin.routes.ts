@@ -19,17 +19,17 @@ AdminRouter.get(
 );
 
 AdminRouter.get(
-  "/leak-reports",
+  "/incident-reports",
   AuthMiddleware.protect,
   AuthMiddleware.restrictTo("admin", "super-admin"),
-  AdminController.getLeakReports
+  AdminController.getIncidentReports
 );
 
 AdminRouter.patch(
-  "/leak-reports/:id/resolve",
+  "/incident-reports/:id/resolve",
   AuthMiddleware.protect,
   AuthMiddleware.restrictTo("admin", "super-admin"),
-  AdminController.resolveLeakReport
+  AdminController.resolveIncidentReport
 );
 
 export default AdminRouter;

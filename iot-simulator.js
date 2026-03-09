@@ -119,7 +119,8 @@ const client = mqtt.connect(brokerUrl, {
     // 3. Start periodic usage simulation
     setInterval(reportRandomUsage, USAGE_INTERVAL);
 
-    reportLeakDetected()
+    reportLeakDetected();
+    reportTamperDetected();
   });
 
   client.on('message', (receivedTopic, message) => {
@@ -179,6 +180,16 @@ const client = mqtt.connect(brokerUrl, {
     };
     client.publish(dataTopic, JSON.stringify(payload), { qos: 1 });
     log(`TX: Simulated leak detected report`);
+  }
+
+  function reportTamperDetected() {
+    const payload = {
+      deviceId,
+      data: { tamperDetected: true },
+      timestamp: Date.now()
+    };
+    client.publish(dataTopic, JSON.stringify(payload), { qos: 1 });
+    log(`TX: Simulated tamper detected report`);
   }
 }
 

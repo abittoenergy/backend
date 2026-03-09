@@ -41,6 +41,12 @@ export function initializeGasPurchaseMqttListener(): void {
         );
       }
 
+      // Check for tamper detection
+      if (data.data.tamperDetected === true) {
+        MeterService.handleTamperDetected(data.deviceId).catch(err =>
+          logger.error(`Failed to handle tamper detection for ${data.deviceId}`, err)
+        );
+      }
 
     } catch (error: any) {
       logger.error("Error processing MQTT device data", {

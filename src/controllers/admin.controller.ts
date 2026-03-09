@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { AdminService } from "../services/admin.service";
-import LeakReportService from "../services/leak-report.service";
-import { LeakReportStatus } from "../db/schema/leak-reports.schema";
+import IncidentReportService from "../services/incident-report.service";
+import { IncidentReportStatus, IncidentType } from "../db/schema/incident-reports.schema";
 import ControllerHelper from "../utils/helpers/controller.helper";
 import ResponseHelper from "../utils/helpers/response.helper";
 
@@ -25,30 +25,31 @@ export class AdminController {
     });
   });
 
-  static getLeakReports = ControllerHelper.createHandler("get-leak-reports", async (req: Request, res: Response, next: NextFunction) => {
+  static getIncidentReports = ControllerHelper.createHandler("get-incident-reports", async (req: Request, res: Response, next: NextFunction) => {
     const query = {
       page: req.query.page as string,
       limit: req.query.limit as string,
-      status: req.query.status as LeakReportStatus,
+      status: req.query.status as IncidentReportStatus,
+      type: req.query.type as IncidentType,
       search: req.query.search as string,
     };
-    const reports = await LeakReportService.getLeakReports(query);
+    const data = await IncidentReportService.getIncidentReports(query);
 
     ResponseHelper.sendSuccessResponse(res, {
-      message: "Leak reports retrieved successfully",
-      data: reports,
+      message: "Incident reports retrieved successfully",
+      data,
     });
   });
 
-  static resolveLeakReport = ControllerHelper.createHandler("resolve-leak-report", async (req: Request, res: Response, next: NextFunction) => {
+  static resolveIncidentReport = ControllerHelper.createHandler("resolve-incident-report", async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
     const { notes } = req.body;
     const adminId = (req as any).user.id;
 
-    const report = await LeakReportService.resolveLeak(id, adminId, notes);
+    const report = await IncidentReportService.resolveIncident(id, adminId, notes);
 
     ResponseHelper.sendSuccessResponse(res, {
-      message: "Leak report resolved successfully",
+      message: "Incident report resolved successfully",
       data: report,
     });
   });

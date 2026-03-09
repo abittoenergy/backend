@@ -11,4 +11,4 @@ export * from "./transactions.schema";
 export * from "./system-settings.schema";
 export * from "./dedicated-virtual-accounts.schema";
 export * from "./gas-usage-audits.schema";
-export * from "./leak-reports.schema";
+export * from "./incident-reports.schema";
