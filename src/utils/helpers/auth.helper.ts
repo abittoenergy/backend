@@ -49,6 +49,38 @@ class AuthHelper {
             algorithm: "HS256",
         });
     }
+    static createTemporalToken(data: object, expiresIn: string = "15m"): string {
+        const payload = {
+            ...data,
+            iss: envConfig.jwt.issuer,
+            aud: envConfig.jwt.audience,
+            isTemporal: true,
+        };
+        return jwt.sign(payload, envConfig.jwt.secret, {
+            expiresIn,
+            algorithm: "HS256",
+        });
+    }
+    static async verifyTemporalToken(token: string): Promise<any> {
+        try {
+            const decoded = jwt.verify(token, envConfig.jwt.secret, {
+                issuer: envConfig.jwt.issuer,
+                audience: envConfig.jwt.audience,
+                algorithms: ["HS256"],
+            }) as any;
+
+            if (!decoded.isTemporal) {
+                throw new AppError("Invalid token type", 401);
+            }
+
+            return decoded;
+        } catch (error) {
+            if (error instanceof Error && error.name === "TokenExpiredError") {
+                throw new AppError("Temporal token has expired", 401);
+            }
+            throw new AppError("Invalid temporal token", 401);
+        }
+    }
     static async verifyBcryptPassword(password: string, hash: string): Promise<boolean> {
         try {
             return await bcrypt.compare(password, hash);

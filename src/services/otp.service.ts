@@ -110,6 +110,12 @@ export default class OTPService {
       return { success: true };
     }
 
+    if (type === OTP_TYPES.FORGOT_PASSWORD) {
+      const token = AuthHelper.createTemporalToken({ email, type: OTP_TYPES.FORGOT_PASSWORD }, "15m");
+      await redis.del(key);
+      return { token };
+    }
+
     await redis.del(key);
   }
 

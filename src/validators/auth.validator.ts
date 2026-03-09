@@ -87,8 +87,7 @@ export const forgotPasswordSchema = z.object({
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 
 export const resetPasswordSchema = z.object({
-    email: z.string({ required_error: "Email is required" }).email("Please provide a valid email address"),
-    otp: z.string({ required_error: "OTP is required" }),
+    token: z.string({ required_error: "Token is required" }),
     newPassword: passwordSchema,
     confirmPassword: z.string({ required_error: "Confirm password is required" }),
 }).superRefine((data, ctx) => {

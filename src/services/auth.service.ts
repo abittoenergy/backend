@@ -140,11 +140,15 @@ export default class AuthService {
   }
 
   async resetPassword(data: any): Promise<void> {
-    const { email, otp, newPassword } = data;
+    const { token, newPassword } = data;
 
-    // Verify OTP first
-    await OTPService.verifyOTP(email, OTP_TYPES.FORGOT_PASSWORD, otp);
+    // Verify temporal token
+    const decoded = await AuthHelper.verifyTemporalToken(token);
+    if (decoded.type !== OTP_TYPES.FORGOT_PASSWORD) {
+      throw new AppError("Invalid reset token", ResponseHelper.UNAUTHORIZED);
+    }
 
+    const email = decoded.email;
     const user = await this.userRepository.findByEmail(email);
     if (!user) {
       throw new AppError("User not found", ResponseHelper.RESOURCE_NOT_FOUND);
