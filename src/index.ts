@@ -31,7 +31,7 @@ import "./queues/dva-generation.queue";
 
 import { connectMqtt } from "./config/mqtt";
 import EmailService from "./services/email.service";
-import { initializeGasPurchaseMqttListener } from "./listeners/gas-purchase-mqtt.listener";
+import { initializeGasPurchaseMqttListener } from "./listeners/device-mqtt.listener";
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
