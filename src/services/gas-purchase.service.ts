@@ -320,6 +320,7 @@ export default class GasPurchaseService {
    */
   static async handleGasUsage(deviceId: string, kgUsed: number): Promise<void> {
     try {
+      if (kgUsed <= 0) return;
       await GasUsageAggregationService.reportUsage(deviceId, kgUsed);
 
       logger.info(`Gas usage buffered for device: ${deviceId}`, {

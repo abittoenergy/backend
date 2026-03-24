@@ -3,6 +3,7 @@ import { IncidentReportStatus, IncidentType } from "../db/schema/incident-report
 import AppError from "../utils/appError";
 import ResponseHelper from "../utils/helpers/response.helper";
 import logger from "../config/logger";
+import MeterService from "./meter.service";
 
 export default class IncidentReportService {
   static async getIncidentReports(query: {
@@ -60,6 +61,13 @@ export default class IncidentReportService {
     });
 
     logger.info(`Incident report ${reportId} resolved by admin ${adminId}`);
+
+    if (result.incidentReport.deviceId) {
+      MeterService.openValve(result.incidentReport.deviceId).catch((err) => {
+        logger.error(`Failed to trigger valve open for meter ${result.incidentReport.deviceId}:`, err);
+      });
+    }
+
     return updatedReport;
   }
 }

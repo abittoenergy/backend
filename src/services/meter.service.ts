@@ -664,6 +664,23 @@ export default class MeterService {
     }
   }
 
+  static async openValve(deviceId: string) {
+    try {
+      mqttService.sendCommand(deviceId, {
+        commandId: `valve_open_${Date.now()}`,
+        action: "VALVE_CONTROL",
+        params: {
+          valveStatus: 1,
+        },
+      });
+
+      await MeterRepo.updateValveStatus(deviceId, true);
+      logger.info(`Valve automatically opened for meter ${deviceId}`);
+    } catch (error: any) {
+      logger.error(`Failed to automatically open valve for ${deviceId}:`, error);
+    }
+  }
+
   static async getMeterStats(meterId: string, userId: string) {
     const result = await MeterRepo.findById(meterId);
     if (!result) {

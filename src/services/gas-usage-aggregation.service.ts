@@ -21,6 +21,7 @@ export class GasUsageAggregationService {
    * Updates balance and usage buffer in Redis
    */
   static async reportUsage(deviceId: string, kgUsed: number): Promise<void> {
+    if (kgUsed <= 0) return;
     try {
       const balanceKey = `${this.REDIS_KEY_BALANCE_PREFIX}${deviceId}`;
       const bufferKey = `${this.REDIS_KEY_USAGE_BUFFER_PREFIX}${deviceId}`;

@@ -19,7 +19,7 @@ export function initializeGasPurchaseMqttListener(): void {
       );
 
       // Check if this is a usage report
-      if (data.data.gasUsage !== undefined) {
+      if (data.data.gasUsage !== undefined && Number(data.data.gasUsage) > 0) {
         GasPurchaseService.handleGasUsage(data.deviceId, Number(data.data.gasUsage));
       }
 
